@@ -1,0 +1,21 @@
+
+NODE_ENV=development
+PORT=3000
+PUBLIC_BASE_URL=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+JWT_SECRET=CHANGE_THIS_TO_A_RANDOM_SECRET_AT_LEAST_32_CHARS
+JWT_EXPIRES_IN=7d
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=fastfood_one
+DB_USER=fastfood_user
+DB_PASSWORD=CHANGE_DATABASE_PASSWORD
+
+# Path to the downloaded Firebase Admin SDK service-account JSON.
+# Keep the file outside public_html and never commit it.
+FIREBASE_SERVICE_ACCOUNT_PATH=/absolute/private/path/firebase-service-account.json
+# Topic used by restaurant device(s) to receive new-order alerts.
+FCM_RESTAURANT_TOPIC=restaurant-orders
+
+# Optional initial admin creation is done using `npm run create-admin`.
