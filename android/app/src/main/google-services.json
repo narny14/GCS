@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "19176234093",
+    "project_id": "gcsshop-f2c2c",
+    "storage_bucket": "gcsshop-f2c2c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:19176234093:android:e5c92a7b8cd622e0a77364",
+        "android_client_info": {
+          "package_name": "com.gcs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMQwW7O3PfDr4IkwfMQWZDMxtS346PezM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

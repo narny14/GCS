@@ -10,10 +10,15 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-firebase/app": "^26.4.0",
+    "@react-native-firebase/messaging": "^26.4.0",
+    "@react-native/new-app-screen": "0.85.1",
+    "@react-navigation/native-stack": "^7.21.0",
     "react": "19.2.3",
     "react-native": "0.85.1",
-    "@react-native/new-app-screen": "0.85.1",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-safe-area-context": "^5.10.1",
+    "react-native-screens": "^4.30.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
