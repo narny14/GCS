@@ -1,4 +1,4 @@
-import React, {useEffect, useState, createContext, useContext} from 'react';
+import React, {useEffect, useState, useCallback, createContext, useContext} from 'react';
 import {ActivityIndicator, Alert, FlatList, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -7,8 +7,6 @@ import {registerPushNotifications, listenForPush} from './notifications';
 
 const Stack = createNativeStackNavigator();
 const AuthContext = createContext(null);
-const { width } = Dimensions.get('window');
-
 const DEBUG_APP = __DEV__;
 
 // --- COULEURS DU DESIGN ---
@@ -168,7 +166,7 @@ function RegisterScreen({navigation}) {
 
     try {
       debugLog('INSCRIPTION', 'Envoi de la requête API');
-      const d = await api('/api/auth/register', {
+      await api('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({
           name: cleanName,
@@ -218,7 +216,7 @@ function MenuScreen({navigation}) {
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState('Tous');
 
-  async function load(showAlert = false) {
+  const load = useCallback(async (showAlert = false) => {
     debugLog('MENU', 'Chargement des produits');
     try {
       const d = await api('/api/products');
@@ -232,13 +230,13 @@ function MenuScreen({navigation}) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     load(false);
-    const timer = setInterval(() => { load(false); }, 15000);
+    const timer = setInterval(() => load(false), 15000);
     return () => clearInterval(timer);
-  },[]);
+  }, [load]);
 
   const count = Object.values(cart).reduce((a,b)=>a+b,0);
 
@@ -475,6 +473,12 @@ function MenuScreen({navigation}) {
                   <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.description} numberOfLines={1}>{item.description || item.category}</Text>
                   <Text style={styles.price}>{money(item.price)}</Text>
+                  <Text style={{color:'#E6A000',fontSize:12,marginTop:3}}>
+                    ★ {Number(item.average_rating || 0).toFixed(1)} ({Number(item.rating_count || 0)})
+                  </Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('RateMeal', {product:item})} style={{marginTop:5}}>
+                    <Text style={{color:COLORS.primary,fontSize:11,fontWeight:'700'}}>Évaluer ★</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Bouton + flottant */}
@@ -490,6 +494,7 @@ function MenuScreen({navigation}) {
 
           {/* Section boutons de navigation (conservés de ton code) */}
           <View style={styles.bottomNav}>
+            <Button title="Composer un repas" secondary onPress={()=>navigation.navigate('MealComposer')} style={styles.navBtn}/>
             <Button title="Mes commandes" secondary onPress={()=>navigation.navigate('Orders')} style={styles.navBtn}/>
             <Button title="Mon compte" secondary onPress={()=>navigation.navigate('Account')} style={styles.navBtn}/>
           </View>
@@ -501,6 +506,181 @@ function MenuScreen({navigation}) {
 }
 
 // --- AUTRES ECRANS (gardés tels quels ou légèrement stylisés) ---
+
+
+const MEAL_GROUPS = [
+  {key:'base', label:'Base', required:true},
+  {key:'viande', label:'Viande', required:true},
+  {key:'accompagnement', label:'Accompagnement', required:true},
+  {key:'legumes', label:'Légumes', required:false},
+  {key:'boisson', label:'Boisson', required:true},
+  {key:'supplements', label:'Suppléments', required:false},
+];
+
+function MealComposerScreen({navigation}) {
+  const [groups, setGroups] = useState({});
+  const [selected, setSelected] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    api('/api/meal-options')
+      .then(data => setGroups(data?.groups || {}))
+      .catch(error => Alert.alert('Options indisponibles', error?.message || 'Impossible de charger les options.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const selectedOptions = Object.values(selected).flat().map(id =>
+    Object.values(groups).flat().find(option => Number(option.id) === Number(id))
+  ).filter(Boolean);
+  const total = selectedOptions.reduce((sum, option) => sum + Number(option.price || 0), 0);
+
+  function toggleOption(group, option) {
+    setSelected(current => {
+      const old = current[group] || [];
+      const isRequired = ['base','viande','accompagnement','boisson'].includes(group);
+      if (isRequired) return {...current, [group]: [option.id]};
+      return {...current, [group]: old.some(id => Number(id) === Number(option.id))
+        ? old.filter(id => Number(id) !== Number(option.id))
+        : [...old, option.id]};
+    });
+  }
+
+  async function placeCustomOrder() {
+    if (busy) return;
+    const required = ['base','viande','accompagnement','boisson'];
+    if (required.some(group => (selected[group] || []).length !== 1)) {
+      Alert.alert('Composition incomplète', 'Choisissez une base, une viande, un accompagnement et une boisson.');
+      return;
+    }
+    const optionIds = Object.values(selected).flat();
+    if (!optionIds.length) return;
+    setBusy(true);
+    try {
+      const me = await api('/api/auth/me');
+      if (!me?.user) throw new Error('Impossible de récupérer votre compte.');
+      const response = await api('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_name: me.user.name,
+          customer_phone: me.user.phone,
+          notes,
+          items: [{type:'composition', option_ids: optionIds, quantity:1}],
+        }),
+      });
+      Alert.alert('Commande confirmée', `Numéro : ${response.order.order_number}\nTotal confirmé : ${money(response.order.total)}`);
+      navigation.replace('Orders');
+    } catch (error) {
+      Alert.alert('Commande impossible', error?.message || 'Une erreur est survenue.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Compose ton repas</Text>
+        <Text style={styles.description}>Choisissez les ingrédients. Le prix est recalculé automatiquement.</Text>
+        {loading ? <ActivityIndicator size="large" color={COLORS.accent} /> : MEAL_GROUPS.map(group => (
+          <View key={group.key} style={{backgroundColor:COLORS.card,borderRadius:16,padding:14,marginBottom:12}}>
+            <Text style={styles.productName}>{group.label}{group.required ? ' *' : ' (facultatif)'}</Text>
+            {(groups[group.key] || []).length === 0 ? (
+              <Text style={styles.description}>Aucune option disponible pour le moment.</Text>
+            ) : (groups[group.key] || []).map(option => {
+              const active = (selected[group.key] || []).some(id => Number(id) === Number(option.id));
+              return (
+                <TouchableOpacity key={String(option.id)} onPress={() => toggleOption(group.key, option)}
+                  style={{padding:12,marginTop:7,borderRadius:12,borderWidth:1,borderColor:active ? COLORS.accent : '#E0E0E0',backgroundColor:active ? '#FFF4DB' : '#FFFFFF',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text style={{flex:1,color:COLORS.primary,fontWeight:active?'800':'500'}}>{active ? '✓ ' : ''}{option.name}</Text>
+                  <Text style={{color:COLORS.accent,fontWeight:'800'}}>{money(option.price)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+        <Field label="Instructions pour le restaurant (facultatif)" value={notes} onChangeText={setNotes} />
+        <View style={{backgroundColor:COLORS.card,borderRadius:16,padding:18,marginVertical:10}}>
+          <Text style={styles.description}>Prix estimé du repas</Text>
+          <Text style={styles.total}>{money(total)}</Text>
+          {selectedOptions.map(option => <Text key={String(option.id)} style={styles.description}>• {option.name} — {money(option.price)}</Text>)}
+        </View>
+        <Button title={busy ? 'Envoi de la commande…' : 'Confirmer ce repas'} onPress={placeCustomOrder} disabled={loading || busy || total <= 0} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function RateMealScreen({route, navigation}) {
+  const product = route.params?.product || {};
+  const [stars, setStars] = useState(5);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [ratings, setRatings] = useState([]);
+
+  const loadRatings = useCallback(async () => {
+    try {
+      const data = await api(`/api/products/${product.id}/ratings`);
+      setSummary(data?.summary || null);
+      setRatings(Array.isArray(data?.ratings) ? data.ratings : []);
+    } catch (error) {
+      debugError('ÉVALUATIONS', error, false);
+    }
+  }, [product.id]);
+
+  useEffect(() => {
+    loadRatings();
+  }, [loadRatings]);
+
+  async function submitRating() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await api(`/api/products/${product.id}/ratings`, {
+        method:'POST',
+        body:JSON.stringify({stars, comment:comment.trim()}),
+      });
+      Alert.alert('Merci !', 'Votre évaluation a été enregistrée.');
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Évaluation impossible', error?.message || 'Vous devez avoir récupéré ce plat avant de le noter.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Évaluer le repas</Text>
+        <Text style={styles.productName}>{product.name || 'Repas'}</Text>
+        <Text style={styles.description}>{summary ? `${Number(summary.average_rating).toFixed(1)} / 5 · ${summary.rating_count} avis` : 'Aucune note pour le moment'}</Text>
+        <View style={{flexDirection:'row',justifyContent:'center',marginVertical:20}}>
+          {[1,2,3,4,5].map(value => (
+            <TouchableOpacity key={value} onPress={() => setStars(value)} accessibilityLabel={`${value} étoiles`}>
+              <Text style={{fontSize:38,color:value <= stars ? '#F5A623' : '#C7C7CC',marginHorizontal:4}}>★</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.label}>Commentaire (facultatif)</Text>
+        <TextInput value={comment} onChangeText={setComment} maxLength={500} multiline
+          placeholder="Qu’avez-vous pensé de ce plat ?" placeholderTextColor={COLORS.textGray}
+          style={[styles.input,{minHeight:100,textAlignVertical:'top'}]} />
+        <Button title={busy ? 'Enregistrement…' : 'Envoyer mon évaluation'} onPress={submitRating} disabled={busy} />
+        <Text style={[styles.sectionTitle,{marginLeft:0}]}>Avis des clients</Text>
+        {ratings.map((rating,index) => (
+          <View key={`${rating.created_at}-${index}`} style={{backgroundColor:COLORS.card,borderRadius:12,padding:12,marginBottom:8}}>
+            <Text style={{color:'#F5A623',fontSize:18}}>{'★'.repeat(Number(rating.stars))}{'☆'.repeat(5-Number(rating.stars))}</Text>
+            <Text style={styles.productName}>{rating.customer_name}</Text>
+            {!!rating.comment && <Text style={styles.description}>{rating.comment}</Text>}
+          </View>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
 function CartScreen({ route, navigation }) {
   const { products = [], cart: initialCart = {}, setCart: setMenuCart } = route.params;
@@ -694,7 +874,7 @@ function CartScreen({ route, navigation }) {
 function OrdersScreen() {
   const [orders,setOrders]=useState([]); const [loading,setLoading]=useState(true);
 
-  async function load(showAlert = false) {
+  const load = useCallback(async (showAlert = false) => {
     debugLog('COMMANDES', 'Chargement des commandes');
     try {
       const d = await api('/api/orders/mine');
@@ -705,9 +885,13 @@ function OrdersScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(()=>{load(false);const timer=setInterval(()=>load(false),15000);return()=>clearInterval(timer);},[]);
+  useEffect(() => {
+    load(false);
+    const timer = setInterval(() => load(false), 15000);
+    return () => clearInterval(timer);
+  }, [load]);
   
   const labels={pending:'En attente de confirmation',accepted:'Acceptée',preparing:'En préparation',ready:'PRÊTE — venez la récupérer !',picked_up:'Récupérée / payée',cancelled:'Annulée'};
   
@@ -727,7 +911,12 @@ function OrdersScreen() {
             <View style={styles.orderCard}>
               <Text style={styles.productName}>{item.order_number}</Text>
               <Text style={[styles.status,item.status==='ready'&&styles.ready]}>{labels[item.status]||item.status}</Text>
-              {(item.items||[]).map((p,i)=><Text key={i} style={{color: COLORS.textGray}}>{p.quantity} × {p.product_name} — {money(p.line_total)}</Text>)}
+              {(item.items||[]).map((p,i)=>(
+                <View key={i} style={{marginTop:5}}>
+                  <Text style={{color: COLORS.textGray}}>{p.quantity} × {p.product_name} — {money(p.line_total)}</Text>
+                  {(p.options||[]).map((option,j)=><Text key={j} style={{color:COLORS.textGray,fontSize:12,marginLeft:12}}>• {option.option_name} — {money(option.unit_price)}</Text>)}
+                </View>
+              ))}
               <Text style={styles.total}>{money(item.total)}</Text>
               <Text style={styles.description}>Paiement : espèces au retrait</Text>
             </View>
@@ -797,6 +986,8 @@ function MainNavigator() {
         <>
           <Stack.Screen name="Menu" component={MenuScreen} options={{headerShown:false}}/>
           <Stack.Screen name="Cart" component={CartScreen} options={{title:'Panier'}}/>
+          <Stack.Screen name="MealComposer" component={MealComposerScreen} options={{title:'Composer mon repas'}}/>
+          <Stack.Screen name="RateMeal" component={RateMealScreen} options={{title:'Évaluer un repas'}}/>
           <Stack.Screen name="Orders" component={OrdersScreen} options={{title:'Mes commandes'}}/>
           <Stack.Screen name="Account" component={AccountScreen} options={{title:'Mon compte'}}/>
         </>
@@ -808,7 +999,7 @@ function MainNavigator() {
 export default function App() {
   const [loggedIn,setLoggedIn]=useState(false); const [loading,setLoading]=useState(true);
   
-  async function reload() {
+  const reload = useCallback(async () => {
     debugLog('SESSION', 'Début du rechargement');
     setLoading(true);
 
@@ -847,14 +1038,14 @@ export default function App() {
       setLoading(false);
       debugLog('SESSION', 'Chargement terminé');
     }
-  }
+  }, []);
 
   useEffect(() => {
     debugLog('APP', 'Démarrage de l’application');
     reload().catch(error =>
       debugError('APP / RELOAD NON GÉRÉ', error, false)
     );
-  }, []);
+  }, [reload]);
 
   useEffect(() => {
     if (!loggedIn) return undefined;

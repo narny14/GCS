@@ -54,7 +54,7 @@ router.get('/', async (req, res, next) => {
 });
 
 
-// Évaluer un plat déjà acheté et récupéré. Une note par client et par plat.
+// Évaluation libre : le client connecté peut noter un plat sans avoir passé ou récupéré une commande. Une note par client et par plat.
 router.post('/:id/ratings', authenticate, async (req, res, next) => {
   try {
     const productId = Number(req.params.id);
@@ -66,22 +66,12 @@ router.post('/:id/ratings', authenticate, async (req, res, next) => {
     }
     if (comment.length > 500) return res.status(400).json({ error: 'Commentaire limité à 500 caractères.' });
 
-    const [eligible] = await db.execute(
-      `SELECT o.id
-       FROM orders o
-       JOIN order_items oi ON oi.order_id=o.id
-       WHERE o.user_id=? AND o.status='picked_up' AND oi.product_id=?
-       ORDER BY o.picked_up_at DESC,o.id DESC LIMIT 1`,
-      [req.user.id, productId]
-    );
-    if (!eligible.length) {
-      return res.status(403).json({ error: 'Vous pourrez évaluer ce plat après avoir récupéré une commande qui le contient.' });
-    }
+    // order_id est NULL pour une évaluation libre, sans commande obligatoire.
     await db.execute(
       `INSERT INTO product_ratings (product_id,user_id,order_id,stars,comment)
-       VALUES (?,?,?,?,?)
-       ON DUPLICATE KEY UPDATE order_id=VALUES(order_id),stars=VALUES(stars),comment=VALUES(comment),updated_at=CURRENT_TIMESTAMP`,
-      [productId, req.user.id, eligible[0].id, stars, comment || null]
+       VALUES (?,?,NULL,?,?)
+       ON DUPLICATE KEY UPDATE stars=VALUES(stars),comment=VALUES(comment),updated_at=CURRENT_TIMESTAMP`,
+      [productId, req.user.id, stars, comment || null]
     );
     const [summary] = await db.execute(
       'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
