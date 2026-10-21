@@ -40,9 +40,72 @@ function deleteLocalImage(url) {
 router.get('/', async (req, res, next) => {
   try {
     const [rows] = await db.execute(
-      'SELECT id,name,description,image_url,price,category,is_available FROM products WHERE is_available = 1 ORDER BY sort_order,id'
+      `SELECT p.id,p.name,p.description,p.image_url,p.price,p.category,p.is_available,
+        COALESCE(AVG(r.stars),0) AS average_rating,
+        COUNT(r.id) AS rating_count
+       FROM products p
+       LEFT JOIN product_ratings r ON r.product_id=p.id
+       WHERE p.is_available=1
+       GROUP BY p.id
+       ORDER BY p.sort_order,p.id`
     );
     res.json({ products: rows });
+  } catch (err) { next(err); }
+});
+
+
+// Évaluer un plat déjà acheté et récupéré. Une note par client et par plat.
+router.post('/:id/ratings', authenticate, async (req, res, next) => {
+  try {
+    const productId = Number(req.params.id);
+    const stars = Number(req.body.stars);
+    const comment = String(req.body.comment || '').trim();
+    if (!Number.isSafeInteger(productId) || productId <= 0 ||
+        !Number.isInteger(stars) || stars < 1 || stars > 5) {
+      return res.status(400).json({ error: 'Choisissez une note de 1 à 5 étoiles.' });
+    }
+    if (comment.length > 500) return res.status(400).json({ error: 'Commentaire limité à 500 caractères.' });
+
+    const [eligible] = await db.execute(
+      `SELECT o.id
+       FROM orders o
+       JOIN order_items oi ON oi.order_id=o.id
+       WHERE o.user_id=? AND o.status='picked_up' AND oi.product_id=?
+       ORDER BY o.picked_up_at DESC,o.id DESC LIMIT 1`,
+      [req.user.id, productId]
+    );
+    if (!eligible.length) {
+      return res.status(403).json({ error: 'Vous pourrez évaluer ce plat après avoir récupéré une commande qui le contient.' });
+    }
+    await db.execute(
+      `INSERT INTO product_ratings (product_id,user_id,order_id,stars,comment)
+       VALUES (?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE order_id=VALUES(order_id),stars=VALUES(stars),comment=VALUES(comment),updated_at=CURRENT_TIMESTAMP`,
+      [productId, req.user.id, eligible[0].id, stars, comment || null]
+    );
+    const [summary] = await db.execute(
+      'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+      [productId]
+    );
+    return res.status(201).json({ ok: true, rating: summary[0] });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/ratings', async (req, res, next) => {
+  try {
+    const productId = Number(req.params.id);
+    if (!Number.isSafeInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Plat invalide.' });
+    const [rows] = await db.execute(
+      `SELECT r.stars,r.comment,r.created_at,u.name AS customer_name
+       FROM product_ratings r JOIN users u ON u.id=r.user_id
+       WHERE r.product_id=? ORDER BY r.created_at DESC LIMIT 100`,
+      [productId]
+    );
+    const [summary] = await db.execute(
+      'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+      [productId]
+    );
+    res.json({ ratings: rows, summary: summary[0] });
   } catch (err) { next(err); }
 });
 

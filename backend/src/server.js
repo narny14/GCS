@@ -43,6 +43,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
+app.use('/api/meal-options', require('./routes/meal-options'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'), { maxAge: '7d', immutable: true }));
 app.use('/admin', express.static(path.join(__dirname, '..', 'public')));

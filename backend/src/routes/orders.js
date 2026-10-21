@@ -28,37 +28,94 @@ router.post('/', authenticate, async (req, res, next) => {
     }
     if (notes.length > 500) return res.status(400).json({ error: 'Note trop longue.' });
 
-    const quantities = new Map();
+    const normalized = [];
     for (const item of items) {
-      const id = Number(item.product_id);
       const qty = Number(item.quantity);
-      if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(qty) || qty < 1 || qty > 20) {
-        return res.status(400).json({ error: 'Produit ou quantité invalide.' });
+      if (!Number.isSafeInteger(qty) || qty < 1 || qty > 20) return res.status(400).json({ error: 'Quantité invalide (1 à 20).' });
+      if (item.type === 'composition' || Array.isArray(item.option_ids)) {
+        const optionIds = [...new Set((item.option_ids || []).map(Number))];
+        if (optionIds.length < 4 || optionIds.length > 30 ||
+            optionIds.some(id => !Number.isSafeInteger(id) || id <= 0) ||
+            optionIds.length !== (item.option_ids || []).length) {
+          return res.status(400).json({ error: 'Composition invalide : sélectionnez une base, une viande, un accompagnement et une boisson.' });
+        }
+        normalized.push({ type: 'composition', quantity: qty, option_ids: optionIds });
+      } else {
+        const id = Number(item.product_id);
+        if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'Produit invalide.' });
+        normalized.push({ type: 'product', product_id: id, quantity: qty });
       }
-      quantities.set(id, (quantities.get(id) || 0) + qty);
     }
-    if ([...quantities.values()].some(q => q > 20)) return res.status(400).json({ error: 'Quantité maximale dépassée.' });
 
     await conn.beginTransaction();
-    const ids = [...quantities.keys()];
-    const placeholders = ids.map(() => '?').join(',');
-    const [products] = await conn.query(
-      `SELECT id,name,price FROM products WHERE is_available = 1 AND id IN (${placeholders}) FOR UPDATE`,
-      ids
-    );
-    if (products.length !== ids.length) {
-      await conn.rollback();
-      return res.status(400).json({ error: 'Un ou plusieurs produits ne sont plus disponibles.' });
+    const productIds = [...new Set(normalized.filter(i => i.type === 'product').map(i => i.product_id))];
+    let productsById = new Map();
+    if (productIds.length) {
+      const [products] = await conn.query(
+        `SELECT id,name,price FROM products WHERE is_available=1 AND id IN (${productIds.map(() => '?').join(',')}) FOR UPDATE`,
+        productIds
+      );
+      if (products.length !== productIds.length) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'Un ou plusieurs produits ne sont plus disponibles.' });
+      }
+      productsById = new Map(products.map(p => [Number(p.id), p]));
     }
 
+    const compositionIds = [...new Set(normalized.filter(i => i.type === 'composition').flatMap(i => i.option_ids))];
+    let optionsById = new Map();
+    if (compositionIds.length) {
+      const [options] = await conn.query(
+        `SELECT id,group_key,name,price FROM meal_options WHERE is_available=1 AND id IN (${compositionIds.map(() => '?').join(',')}) FOR UPDATE`,
+        compositionIds
+      );
+      if (options.length !== compositionIds.length) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'Une option de composition n’est plus disponible. Rechargez les options.' });
+      }
+      optionsById = new Map(options.map(o => [Number(o.id), o]));
+    }
+
+    const lineItems = [];
     let total = 0;
-    const lineItems = products.map(p => {
-      const quantity = quantities.get(Number(p.id));
-      const unitPrice = Number(p.price);
-      const lineTotal = Math.round(unitPrice * quantity * 100) / 100;
+    for (const item of normalized) {
+      let productId = null;
+      let productName;
+      let unitPrice;
+      let selectedOptions = [];
+      if (item.type === 'product') {
+        const p = productsById.get(item.product_id);
+        productId = p.id;
+        productName = p.name;
+        unitPrice = Number(p.price);
+      } else {
+        selectedOptions = item.option_ids.map(id => optionsById.get(id));
+        const groupCounts = new Map();
+        for (const option of selectedOptions) groupCounts.set(option.group_key, (groupCounts.get(option.group_key) || 0) + 1);
+        for (const required of ['base','viande','accompagnement','boisson']) {
+          if (groupCounts.get(required) !== 1) {
+            await conn.rollback();
+            return res.status(400).json({ error: 'Choisissez exactement une base, une viande, un accompagnement et une boisson.' });
+          }
+        }
+        if (groupCounts.get('legumes') > 5 || groupCounts.get('supplements') > 10) {
+          await conn.rollback();
+          return res.status(400).json({ error: 'Trop de légumes ou de suppléments sélectionnés.' });
+        }
+        unitPrice = Math.round(selectedOptions.reduce((sum, o) => sum + Number(o.price), 0) * 100) / 100;
+        productName = 'Repas personnalisé';
+      }
+      const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
       total = Math.round((total + lineTotal) * 100) / 100;
-      return { product_id: p.id, product_name: p.name, unit_price: unitPrice, quantity, line_total: lineTotal };
-    });
+      lineItems.push({
+        product_id: productId, product_name: productName,
+        unit_price: unitPrice, quantity: item.quantity, line_total: lineTotal,
+        options: selectedOptions.map(o => ({
+          meal_option_id: o.id, option_group: o.group_key,
+          option_name: o.name, unit_price: Number(o.price)
+        }))
+      });
+    }
 
     const orderNumber = `FF-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
     const [result] = await conn.execute(
@@ -67,15 +124,21 @@ router.post('/', authenticate, async (req, res, next) => {
       [orderNumber, req.user.id, customerName, customerPhone, notes || null, total, total]
     );
     for (const item of lineItems) {
-      await conn.execute(
+      const [itemResult] = await conn.execute(
         'INSERT INTO order_items (order_id,product_id,product_name,unit_price,quantity,line_total) VALUES (?,?,?,?,?,?)',
         [result.insertId, item.product_id, item.product_name, item.unit_price, item.quantity, item.line_total]
       );
+      for (const option of item.options) {
+        await conn.execute(
+          `INSERT INTO order_item_options (order_item_id,meal_option_id,option_group,option_name,unit_price,quantity,line_total)
+           VALUES (?,?,?,?,?,1,?)`,
+          [itemResult.insertId, option.meal_option_id, option.option_group, option.option_name, option.unit_price, option.unit_price]
+        );
+      }
     }
     await conn.commit();
 
     const order = { id: result.insertId, order_number: orderNumber, customer_name: customerName, total };
-    // Push is best-effort: a push provider outage must not undo a saved order.
     sendRestaurantNewOrder(order).catch(() => {});
     return res.status(201).json({ order: { ...order, status: 'pending', payment_method: 'cash_pickup', items: lineItems } });
   } catch (err) {
@@ -93,11 +156,22 @@ router.get('/mine', authenticate, async (req, res, next) => {
     if (!orders.length) return res.json({ orders: [] });
     const ids = orders.map(o => o.id);
     const [items] = await db.query(
-      `SELECT order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
+      `SELECT id,order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
       ids
     );
+    const itemIds = items.map(i => i.id);
+    const [options] = itemIds.length ? await db.query(
+      `SELECT order_item_id,option_group,option_name,unit_price,quantity,line_total FROM order_item_options WHERE order_item_id IN (${itemIds.map(() => '?').join(',')}) ORDER BY id`,
+      itemIds
+    ) : [[]];
+    const optionsByItem = new Map();
+    for (const option of options) {
+      if (!optionsByItem.has(option.order_item_id)) optionsByItem.set(option.order_item_id, []);
+      optionsByItem.get(option.order_item_id).push(option);
+    }
     const byOrder = new Map();
     for (const item of items) {
+      item.options = optionsByItem.get(item.id) || [];
       if (!byOrder.has(item.order_id)) byOrder.set(item.order_id, []);
       byOrder.get(item.order_id).push(item);
     }
@@ -117,11 +191,22 @@ router.get('/admin/all', authenticate, requireAdmin, async (req, res, next) => {
     if (!orders.length) return res.json({ orders: [] });
     const ids = orders.map(o => o.id);
     const [items] = await db.query(
-      `SELECT order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
+      `SELECT id,order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
       ids
     );
+    const itemIds = items.map(i => i.id);
+    const [options] = itemIds.length ? await db.query(
+      `SELECT order_item_id,option_group,option_name,unit_price,quantity,line_total FROM order_item_options WHERE order_item_id IN (${itemIds.map(() => '?').join(',')}) ORDER BY id`,
+      itemIds
+    ) : [[]];
+    const optionsByItem = new Map();
+    for (const option of options) {
+      if (!optionsByItem.has(option.order_item_id)) optionsByItem.set(option.order_item_id, []);
+      optionsByItem.get(option.order_item_id).push(option);
+    }
     const byOrder = new Map();
     for (const item of items) {
+      item.options = optionsByItem.get(item.id) || [];
       if (!byOrder.has(item.order_id)) byOrder.set(item.order_id, []);
       byOrder.get(item.order_id).push(item);
     }
