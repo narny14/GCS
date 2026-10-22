@@ -84,6 +84,7 @@ function Field({label, value, onChangeText, secureTextEntry, keyboardType, autoC
         secureTextEntry={secureTextEntry} 
         keyboardType={keyboardType} 
         autoCapitalize={autoCapitalize || 'sentences'} 
+        
         placeholderTextColor={COLORS.textGray}
       />
     </View>
@@ -303,9 +304,8 @@ function MenuScreen({navigation}) {
     // Lorsque le client recherche un terme, la recherche porte sur
     // toutes les catégories, même si un filtre était précédemment actif.
     const matchesSelectedCategory =
-      query.length > 0 ||
-      activeFilter === 'Tous' ||
-      matchesCategory(product.category, activeFilter);
+  activeFilter === 'Tous' ||
+  matchesCategory(product.category, activeFilter);
 
     return matchesSearch && matchesSelectedCategory;
   });
@@ -348,6 +348,7 @@ function MenuScreen({navigation}) {
       autoCorrect={false}
       returnKeyType="search"
       accessibilityLabel="Rechercher un produit"
+      keyboardShouldPersistTaps="always"
     />
 
     {searchText.length > 0 && (
@@ -364,61 +365,66 @@ function MenuScreen({navigation}) {
 
 
       {/* Filtres (Visuel uniquement pour l'instant) */}
-      <ScrollView
+      
+{/* Catégories : toujours affichées sous la recherche */}
+<ScrollView
   horizontal
+  alwaysBounceHorizontal={false}
   showsHorizontalScrollIndicator={false}
-  style={{ flexGrow: 0, marginTop: 20 }}
+  keyboardShouldPersistTaps="always"
+  style={{ flexGrow: 0, flexShrink: 0, marginTop: 20 }}
   contentContainerStyle={styles.filterRow}
 >
-        
-{[
-  'Tous',
-  'Pizza',
-  'Burger',
-  'Frites',
-  'Drink',
-  'Poulet',
-  'Porcs',
-  'Poissons',
-  'Legumes',
-  'Chevres',
-  'Vaches',
-  'Lapins',
-  'Dindons',
-  'Gibiers',
-].map((filter) => (
-  <TouchableOpacity
-    key={filter}
-    style={[
-      styles.filterBtn,
-      activeFilter === filter && styles.activeFilter,
-    ]}
-    onPress={() => setActiveFilter(filter)}
-  >
-    <Text
+  {[
+    'Tous',
+    'Pizza',
+    'Burger',
+    'Frites',
+    'Drink',
+    'Poulet',
+    'Porcs',
+    'Poissons',
+    'Legumes',
+    'Chevres',
+    'Vaches',
+    'Lapins',
+    'Dindons',
+    'Gibiers',
+  ].map(filter => (
+    <TouchableOpacity
+      key={filter}
       style={[
-        styles.filterText,
-        activeFilter === filter && styles.activeFilterText,
+        styles.filterBtn,
+        activeFilter === filter && styles.activeFilter,
       ]}
+      onPress={() => setActiveFilter(filter)}
+      accessibilityRole="button"
+      accessibilityState={{ selected: activeFilter === filter }}
     >
-      {{
-  Tous: 'Tous',
-  Drink: 'Boissons',
-  Legumes: 'Légumes',
-  Chevres: 'Chèvres',
-  Poulet: 'Poulet',
-  Vaches: 'Vaches',
-  Porcs: 'Porcs',
-  Poissons: 'Poissons',
-  Lapins: 'Lapins',
-  Dindons: 'Dindons',
-  Gibiers: 'Gibiers',
-}[filter] || filter}
-    </Text>
-  </TouchableOpacity>
-))}
+      <Text
+        style={[
+          styles.filterText,
+          activeFilter === filter && styles.activeFilterText,
+        ]}
+      >
+        {{
+          Tous: 'Tous',
+          Drink: 'Boissons',
+          Legumes: 'Légumes',
+          Chevres: 'Chèvres',
+          Poulet: 'Poulet',
+          Vaches: 'Vaches',
+          Porcs: 'Porcs',
+          Poissons: 'Poissons',
+          Lapins: 'Lapins',
+          Dindons: 'Dindons',
+          Gibiers: 'Gibiers',
+        }[filter] || filter}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
 
-      </ScrollView>
 
       {loading ? (
         <ActivityIndicator size="large" color={COLORS.accent} style={{marginTop: 50}}/>
@@ -508,14 +514,16 @@ function MenuScreen({navigation}) {
 // --- AUTRES ECRANS (gardés tels quels ou légèrement stylisés) ---
 
 
+
 const MEAL_GROUPS = [
-  {key:'base', label:'Base', required:true},
-  {key:'viande', label:'Viande', required:true},
-  {key:'accompagnement', label:'Accompagnement', required:true},
-  {key:'legumes', label:'Légumes', required:false},
-  {key:'boisson', label:'Boisson', required:true},
-  {key:'supplements', label:'Suppléments', required:false},
+  {key: 'base', label: 'Base', required: false},
+  {key: 'viande', label: 'Viande', required: false},
+  {key: 'accompagnement', label: 'Accompagnement', required: false},
+  {key: 'legumes', label: 'Légumes', required: false},
+  {key: 'boisson', label: 'Boisson', required: false},
+  {key: 'supplements', label: 'Suppléments', required: false},
 ];
+
 
 function MealComposerScreen({navigation}) {
   const [groups, setGroups] = useState({});
@@ -536,16 +544,23 @@ function MealComposerScreen({navigation}) {
   ).filter(Boolean);
   const total = selectedOptions.reduce((sum, option) => sum + Number(option.price || 0), 0);
 
-  function toggleOption(group, option) {
-    setSelected(current => {
-      const old = current[group] || [];
-      const isRequired = ['base','viande','accompagnement','boisson'].includes(group);
-      if (isRequired) return {...current, [group]: [option.id]};
-      return {...current, [group]: old.some(id => Number(id) === Number(option.id))
+  
+function toggleOption(group, option) {
+  setSelected(current => {
+    const old = current[group] || [];
+    const alreadySelected = old.some(
+      id => Number(id) === Number(option.id)
+    );
+
+    return {
+      ...current,
+      [group]: alreadySelected
         ? old.filter(id => Number(id) !== Number(option.id))
-        : [...old, option.id]};
-    });
-  }
+        : [...old, option.id],
+    };
+  });
+}
+
 
   async function placeCustomOrder() {
     if (busy) return;
