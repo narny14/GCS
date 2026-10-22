@@ -1,0 +1,798 @@
+==================================================
+AUDIT FASTFOOD ONE - 2026-10-22 09:57:24
+==================================================
+
+
+========== 1. EMPLACEMENT ET GIT ==========
+
+Path
+----
+C:\reactnative\GCS
+## main...origin/main
+?? AUDIT_FASTFOOD_ONE.txt
+5282007 Fix optional meal composition validation
+
+
+
+
+========== 2. ARBORESCENCE DU PROJET (hors node_modules et builds) ==========
+
+Type    FullName
+----    --------
+DOSSIER C:\reactnative\GCS\__tests__
+DOSSIER C:\reactnative\GCS\.bundle
+DOSSIER C:\reactnative\GCS\.git
+DOSSIER C:\reactnative\GCS\android
+DOSSIER C:\reactnative\GCS\backend
+DOSSIER C:\reactnative\GCS\ios
+DOSSIER C:\reactnative\GCS\node_modules
+DOSSIER C:\reactnative\GCS\src
+FICHIER C:\reactnative\GCS\.eslintrc.js
+FICHIER C:\reactnative\GCS\.gitignore
+FICHIER C:\reactnative\GCS\.prettierrc.js
+FICHIER C:\reactnative\GCS\.watchmanconfig
+FICHIER C:\reactnative\GCS\App.js
+FICHIER C:\reactnative\GCS\app.json
+FICHIER C:\reactnative\GCS\AUDIT_FASTFOOD_ONE.txt
+FICHIER C:\reactnative\GCS\babel.config.js
+FICHIER C:\reactnative\GCS\backend.zip
+FICHIER C:\reactnative\GCS\Gemfile
+FICHIER C:\reactnative\GCS\index.js
+FICHIER C:\reactnative\GCS\jest.config.js
+FICHIER C:\reactnative\GCS\metro.config.js
+FICHIER C:\reactnative\GCS\package-lock.json
+FICHIER C:\reactnative\GCS\package.json
+FICHIER C:\reactnative\GCS\README.md
+FICHIER C:\reactnative\GCS\.bundle\config
+DOSSIER C:\reactnative\GCS\android\.gradle
+DOSSIER C:\reactnative\GCS\android\.kotlin
+DOSSIER C:\reactnative\GCS\android\app
+DOSSIER C:\reactnative\GCS\android\build
+DOSSIER C:\reactnative\GCS\android\gradle
+FICHIER C:\reactnative\GCS\android\build.gradle
+FICHIER C:\reactnative\GCS\android\gradle.properties
+FICHIER C:\reactnative\GCS\android\gradlew
+FICHIER C:\reactnative\GCS\android\gradlew.bat
+FICHIER C:\reactnative\GCS\android\settings.gradle
+DOSSIER C:\reactnative\GCS\android\.kotlin\sessions
+DOSSIER C:\reactnative\GCS\android\app\.cxx
+DOSSIER C:\reactnative\GCS\android\app\build
+DOSSIER C:\reactnative\GCS\android\app\src
+FICHIER C:\reactnative\GCS\android\app\build.gradle
+FICHIER C:\reactnative\GCS\android\app\debug.keystore
+FICHIER C:\reactnative\GCS\android\app\google-services.json
+FICHIER C:\reactnative\GCS\android\app\proguard-rules.pro
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\arm64-v8a
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\armeabi-v7a
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\prefab
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\x86
+DOSSIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\x86_64
+FICHIER C:\reactnative\GCS\android\app\.cxx\RelWithDebInfo\1q2t3t1d\hash_key.txt
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools\release
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools\release\arm64-v8a
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools\release\armeabi-v7a
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools\release\x86
+DOSSIER C:\reactnative\GCS\android\app\.cxx\tools\release\x86_64
+DOSSIER C:\reactnative\GCS\android\app\build\generated
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates
+DOSSIER C:\reactnative\GCS\android\app\build\kotlin
+DOSSIER C:\reactnative\GCS\android\app\build\kotlinToolingMetadata
+DOSSIER C:\reactnative\GCS\android\app\build\outputs
+DOSSIER C:\reactnative\GCS\android\app\build\tmp
+DOSSIER C:\reactnative\GCS\android\app\build\generated\ap_generated_sources
+DOSSIER C:\reactnative\GCS\android\app\build\generated\assets
+DOSSIER C:\reactnative\GCS\android\app\build\generated\autolinking
+DOSSIER C:\reactnative\GCS\android\app\build\generated\res
+DOSSIER C:\reactnative\GCS\android\app\build\generated\source
+DOSSIER C:\reactnative\GCS\android\app\build\generated\sourcemaps
+DOSSIER C:\reactnative\GCS\android\app\build\generated\ap_generated_sources\release
+DOSSIER C:\reactnative\GCS\android\app\build\generated\assets\react
+DOSSIER C:\reactnative\GCS\android\app\build\generated\autolinking\src
+DOSSIER C:\reactnative\GCS\android\app\build\generated\res\pngs
+DOSSIER C:\reactnative\GCS\android\app\build\generated\res\react
+DOSSIER C:\reactnative\GCS\android\app\build\generated\res\resValues
+DOSSIER C:\reactnative\GCS\android\app\build\generated\source\buildConfig
+DOSSIER C:\reactnative\GCS\android\app\build\generated\sourcemaps\react
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\aar_metadata_check
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\annotation_processor_list
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\apk_ide_redirect_file
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\app_metadata
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\assets
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\binary_art_profile
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\binary_art_profile_metadata
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\combined_art_profile
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compatible_screen_manifest
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compile_and_runtime_not_namespaced_r_class_jar
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compressed_assets
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\cxx
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\d8_metadata
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\data_binding_layout_info_type_merge
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\data_binding_layout_info_type_package
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\default_proguard_files
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\desugar_graph
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_archive_input_jar_hashes
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_metadata_directory
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_number_of_buckets_file
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\duplicate_classes_check
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_file_lib_dex_archives
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex_archive
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex_archive_with_artifact_transforms
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_dex
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_external_lib
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_external_libs_artifact_transform
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_file_lib
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_mixed_scope
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_project
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_subproject
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\java_res
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\javac
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\linked_resources_binary_format
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_intermediate_text_report
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_output
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_partial_results
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_report_lint_model
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_return_value
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint-cache
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\local_only_symbol_list
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\manifest_merge_blame_file
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_art_profile
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_java_res
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_jni_libs
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_manifest
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_manifests
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_native_libs
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_res
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_res_blame_folder
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_shaders
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_startup_profile
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_test_only_native_libs
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\metadata_library_dependencies_report
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\mixed_scope_dex_archive
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\native_symbol_tables
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\navigation_json
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\nested_resources_validation_report
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\optimized_processed_res
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\packaged_manifests
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\packaged_res
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\project_dex_archive
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\runtime_symbol_list
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sdk_dependency_data
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\signing_config_versions
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\source_set_path_map
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sourcemaps
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\stable_resource_ids_file
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\stripped_native_libs
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sub_project_dex_archive
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\symbol_list_with_package_name
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\validate_signing_config
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\version_control_info_file
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\aar_metadata_check\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\annotation_processor_list\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\apk_ide_redirect_file\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\app_metadata\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\assets\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\binary_art_profile\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\binary_art_profile_metadata\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\combined_art_profile\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compatible_screen_manifest\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compile_and_runtime_not_namespaced_r_class_jar\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\compressed_assets\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\cxx\RelWithDebInfo
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\d8_metadata\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\data_binding_layout_info_type_merge\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\data_binding_layout_info_type_package\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\default_proguard_files\global
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\desugar_graph\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_archive_input_jar_hashes\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_metadata_directory\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\dex_number_of_buckets_file\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\duplicate_classes_check\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_file_lib_dex_archives\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex_archive\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\external_libs_dex_archive_with_artifact_transforms\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_dex\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_external_lib\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_external_libs_artifact_transform\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_file_lib\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_mixed_scope\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_project\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\global_synthetics_subproject\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\lintVitalAnalyzeRelease
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\mergeReleaseAssets
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\mergeReleaseJniLibFolders
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\mergeReleaseShaders
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\packageRelease
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\incremental\release-mergeJavaRes
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\javac\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\java_res\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\linked_resources_binary_format\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint-cache\lintVitalAnalyzeRelease
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint-cache\lintVitalReportRelease
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_intermediate_text_report\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_output\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_partial_results\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_report_lint_model\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\lint_vital_return_value\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\local_only_symbol_list\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\manifest_merge_blame_file\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_art_profile\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_java_res\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_jni_libs\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_manifest\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_manifests\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_native_libs\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_res\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_res_blame_folder\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_shaders\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_startup_profile\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\merged_test_only_native_libs\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\metadata_library_dependencies_report\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\mixed_scope_dex_archive\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\native_symbol_tables\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\navigation_json\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\nested_resources_validation_report\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\optimized_processed_res\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\packaged_manifests\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\packaged_res\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\project_dex_archive\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\runtime_symbol_list\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sdk_dependency_data\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\signing_config_versions\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sourcemaps\react
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\source_set_path_map\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\stable_resource_ids_file\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\stripped_native_libs\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\sub_project_dex_archive\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\symbol_list_with_package_name\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\validate_signing_config\release
+DOSSIER C:\reactnative\GCS\android\app\build\intermediates\version_control_info_file\release
+DOSSIER C:\reactnative\GCS\android\app\build\kotlin\compileReleaseKotlin
+DOSSIER C:\reactnative\GCS\android\app\build\kotlin\compileReleaseKotlin\cacheable
+DOSSIER C:\reactnative\GCS\android\app\build\kotlin\compileReleaseKotlin\classpath-snapshot
+DOSSIER C:\reactnative\GCS\android\app\build\kotlin\compileReleaseKotlin\local-state
+FICHIER C:\reactnative\GCS\android\app\build\kotlinToolingMetadata\kotlin-tooling-metadata.json
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\apk
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\logs
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\native-debug-symbols
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\sdk-dependencies
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\apk\release
+FICHIER C:\reactnative\GCS\android\app\build\outputs\logs\manifest-merger-release-report.txt
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\native-debug-symbols\release
+DOSSIER C:\reactnative\GCS\android\app\build\outputs\sdk-dependencies\release
+DOSSIER C:\reactnative\GCS\android\app\build\tmp\compileReleaseJavaWithJavac
+DOSSIER C:\reactnative\GCS\android\app\build\tmp\kotlin-classes
+FICHIER C:\reactnative\GCS\android\app\build\tmp\compileReleaseJavaWithJavac\previous-compilation-data.bin
+DOSSIER C:\reactnative\GCS\android\app\build\tmp\kotlin-classes\release
+DOSSIER C:\reactnative\GCS\android\app\src\main
+DOSSIER C:\reactnative\GCS\android\app\src\main\java
+DOSSIER C:\reactnative\GCS\android\app\src\main\res
+FICHIER C:\reactnative\GCS\android\app\src\main\AndroidManifest.xml
+FICHIER C:\reactnative\GCS\android\app\src\main\google-services.json
+DOSSIER C:\reactnative\GCS\android\app\src\main\java\com
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\drawable
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\mipmap-hdpi
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\mipmap-mdpi
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\mipmap-xhdpi
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\mipmap-xxhdpi
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\mipmap-xxxhdpi
+DOSSIER C:\reactnative\GCS\android\app\src\main\res\values
+DOSSIER C:\reactnative\GCS\android\gradle\wrapper
+FICHIER C:\reactnative\GCS\android\gradle\wrapper\gradle-wrapper.jar
+FICHIER C:\reactnative\GCS\android\gradle\wrapper\gradle-wrapper.properties
+DOSSIER C:\reactnative\GCS\backend\database
+DOSSIER C:\reactnative\GCS\backend\node_modules
+DOSSIER C:\reactnative\GCS\backend\public
+DOSSIER C:\reactnative\GCS\backend\scripts
+DOSSIER C:\reactnative\GCS\backend\src
+DOSSIER C:\reactnative\GCS\backend\uploads
+FICHIER C:\reactnative\GCS\backend\.env
+FICHIER C:\reactnative\GCS\backend\.env copy.example
+FICHIER C:\reactnative\GCS\backend\.env.example
+FICHIER C:\reactnative\GCS\backend\package-lock.json
+FICHIER C:\reactnative\GCS\backend\package.json
+FICHIER C:\reactnative\GCS\backend\server.js
+FICHIER C:\reactnative\GCS\backend\database\schema.sql
+FICHIER C:\reactnative\GCS\backend\public\app.js
+FICHIER C:\reactnative\GCS\backend\public\index.html
+FICHIER C:\reactnative\GCS\backend\public\styles.css
+FICHIER C:\reactnative\GCS\backend\scripts\create-admin.js
+DOSSIER C:\reactnative\GCS\backend\src\config
+DOSSIER C:\reactnative\GCS\backend\src\middleware
+DOSSIER C:\reactnative\GCS\backend\src\routes
+DOSSIER C:\reactnative\GCS\backend\src\services
+FICHIER C:\reactnative\GCS\backend\src\server copy.js
+FICHIER C:\reactnative\GCS\backend\src\server.js
+FICHIER C:\reactnative\GCS\backend\src\config\db.js
+FICHIER C:\reactnative\GCS\backend\src\middleware\auth.js
+FICHIER C:\reactnative\GCS\backend\src\routes\auth.js
+FICHIER C:\reactnative\GCS\backend\src\routes\meal-options.js
+FICHIER C:\reactnative\GCS\backend\src\routes\orders.js
+FICHIER C:\reactnative\GCS\backend\src\routes\products.js
+FICHIER C:\reactnative\GCS\backend\src\services\notifications.js
+FICHIER C:\reactnative\GCS\backend\uploads\.gitkeep
+DOSSIER C:\reactnative\GCS\ios\GCS
+DOSSIER C:\reactnative\GCS\ios\GCS.xcodeproj
+FICHIER C:\reactnative\GCS\ios\.xcode.env
+FICHIER C:\reactnative\GCS\ios\Podfile
+DOSSIER C:\reactnative\GCS\ios\GCS\Images.xcassets
+FICHIER C:\reactnative\GCS\ios\GCS\AppDelegate.swift
+FICHIER C:\reactnative\GCS\ios\GCS\Info.plist
+FICHIER C:\reactnative\GCS\ios\GCS\LaunchScreen.storyboard
+FICHIER C:\reactnative\GCS\ios\GCS\PrivacyInfo.xcprivacy
+DOSSIER C:\reactnative\GCS\ios\GCS\Images.xcassets\AppIcon.appiconset
+FICHIER C:\reactnative\GCS\ios\GCS\Images.xcassets\Contents.json
+FICHIER C:\reactnative\GCS\ios\GCS\Images.xcassets\AppIcon.appiconset\Contents.json
+DOSSIER C:\reactnative\GCS\ios\GCS.xcodeproj\xcshareddata
+FICHIER C:\reactnative\GCS\ios\GCS.xcodeproj\project.pbxproj
+DOSSIER C:\reactnative\GCS\ios\GCS.xcodeproj\xcshareddata\xcschemes
+FICHIER C:\reactnative\GCS\ios\GCS.xcodeproj\xcshareddata\xcschemes\GCS.xcscheme
+FICHIER C:\reactnative\GCS\src\api.js
+FICHIER C:\reactnative\GCS\src\App copy 2.js
+FICHIER C:\reactnative\GCS\src\App_FASTFOOD_connexion.js
+FICHIER C:\reactnative\GCS\src\App.js
+FICHIER C:\reactnative\GCS\src\config.js
+FICHIER C:\reactnative\GCS\src\notifications.js
+FICHIER C:\reactnative\GCS\__tests__\App.test.tsx
+
+
+
+
+========== 3. FICHIERS PRINCIPAUX ==========
+
+FullName                                              Length LastWriteTime
+--------                                              ------ -------------
+C:\reactnative\GCS\package.json                         1515 19/10/2026 23:56:36
+C:\reactnative\GCS\package-lock.json                  549760 19/10/2026 23:56:37
+C:\reactnative\GCS\App.js                                120 16/10/2026 07:41:31
+C:\reactnative\GCS\app.json                               44 19/10/2026 08:20:10
+C:\reactnative\GCS\index.js                              187 19/10/2026 08:20:10
+ABSENT : api.js
+C:\reactnative\GCS\src\api.js                            868 16/10/2026 07:41:31
+C:\reactnative\GCS\backend\package.json                  629 19/10/2026 23:59:01
+C:\reactnative\GCS\backend\package-lock.json           58018 19/10/2026 23:59:01
+C:\reactnative\GCS\backend\server.js                      89 19/10/2026 23:27:05
+C:\reactnative\GCS\backend\src\server.js                2476 21/10/2026 14:56:08
+C:\reactnative\GCS\backend\src\config\db.js              389 16/10/2026 07:41:31
+C:\reactnative\GCS\backend\src\routes\auth.js           3808 21/10/2026 12:41:22
+C:\reactnative\GCS\backend\src\routes\products.js       8409 21/10/2026 15:52:55
+C:\reactnative\GCS\backend\src\routes\meal-options.js    691 21/10/2026 12:41:36
+C:\reactnative\GCS\backend\src\routes\orders.js        11033 22/10/2026 09:07:59
+C:\reactnative\GCS\backend\public\index.html            3523 16/10/2026 08:04:34
+C:\reactnative\GCS\backend\public\app.js               13500 16/10/2026 08:04:34
+C:\reactnative\GCS\android\app\build.gradle             4697 19/10/2026 08:20:10
+C:\reactnative\GCS\android\app\google-services.json      661 19/10/2026 18:44:12
+
+
+
+
+========== 4. SCRIPTS ET DEPENDANCES MOBILES ==========
+SCRIPTS :
+
+android : react-native run-android
+ios     : react-native run-ios
+lint    : eslint .
+start   : react-native start
+test    : jest
+
+DEPENDANCES :
+
+@react-native-async-storage/async-storage : ^3.1.1
+@react-native-firebase/app                : ^26.4.0
+@react-native-firebase/messaging          : ^26.4.0
+@react-native/new-app-screen              : 0.85.1
+@react-navigation/native-stack            : ^7.21.0
+firebase-admin                            : ^14.5.0
+multer                                    : ^2.4.0
+react                                     : 19.2.3
+react-native                              : 0.85.1
+react-native-safe-area-context            : ^5.10.1
+react-native-screens                      : ^4.30.0
+
+DEV DEPENDANCES :
+
+@babel/core                                  : ^7.25.2
+@babel/preset-env                            : ^7.25.3
+@babel/runtime                               : ^7.25.0
+@react-native-community/cli                  : 20.1.0
+@react-native-community/cli-platform-android : 20.1.0
+@react-native-community/cli-platform-ios     : 20.1.0
+@react-native/babel-preset                   : 0.85.1
+@react-native/eslint-config                  : 0.85.1
+@react-native/jest-preset                    : 0.85.1
+@react-native/metro-config                   : 0.85.1
+@react-native/typescript-config              : 0.85.1
+@types/jest                                  : ^29.5.13
+@types/react                                 : ^19.2.0
+@types/react-test-renderer                   : ^19.1.0
+eslint                                       : ^8.19.0
+jest                                         : ^29.6.3
+prettier                                     : 2.8.8
+react-test-renderer                          : 19.2.3
+typescript                                   : ^5.8.3
+
+VERSION NODE :
+v22.22.2
+VERSION NPM :
+10.9.7
+
+
+
+========== 5. DEPENDANCES BACKEND ==========
+SCRIPTS :
+
+test  : echo "Error: no test specified" && exit 1
+start : node server.js
+dev   : nodemon server.js
+
+DEPENDANCES :
+
+bcryptjs           : ^3.0.3
+cookie-parser      : ^1.4.7
+cors               : ^2.8.6
+dotenv             : ^18.0.8
+express            : ^5.3.0
+express-rate-limit : ^8.7.1
+helmet             : ^8.3.0
+jsonwebtoken       : ^9.0.3
+multer             : ^2.4.0
+mysql2             : ^3.24.6
+
+
+
+
+========== 6. ROUTES ET FONCTIONS BACKEND ==========
+
+Path                                                     LineNumber Line
+----                                                     ---------- ----
+C:\reactnative\GCS\backend\src\server copy.js                     2 require('dotenv').config();
+C:\reactnative\GCS\backend\src\server copy.js                     3 const path = require('path');
+C:\reactnative\GCS\backend\src\server copy.js                     4 const express = require('express');
+C:\reactnative\GCS\backend\src\server copy.js                     5 const helmet = require('helmet');
+C:\reactnative\GCS\backend\src\server copy.js                     6 const cors = require('cors');
+C:\reactnative\GCS\backend\src\server copy.js                     7 const rateLimit = require('express-rate-limit');
+C:\reactnative\GCS\backend\src\server copy.js                     8 const cookieParser = require('cookie-parser');
+C:\reactnative\GCS\backend\src\server copy.js                     9 const db = require('./config/db');
+C:\reactnative\GCS\backend\src\server copy.js                    35 app.get('/api/health', async (req, res) => {
+C:\reactnative\GCS\backend\src\server copy.js                    37     await db.query('SELECT 1');
+C:\reactnative\GCS\backend\src\server copy.js                    44 app.use('/api/auth', require('./routes/auth'));
+C:\reactnative\GCS\backend\src\server copy.js                    45 app.use('/api/products', require('./routes/products'));
+C:\reactnative\GCS\backend\src\server copy.js                    46 app.use('/api/meal-options', require('./routes/meal-options'));
+C:\reactnative\GCS\backend\src\server copy.js                    47 app.use('/api/orders', require('./routes/orders'));
+C:\reactnative\GCS\backend\src\server.js                          2 require('dotenv').config();
+C:\reactnative\GCS\backend\src\server.js                          3 const path = require('path');
+C:\reactnative\GCS\backend\src\server.js                          4 const express = require('express');
+C:\reactnative\GCS\backend\src\server.js                          5 const helmet = require('helmet');
+C:\reactnative\GCS\backend\src\server.js                          6 const cors = require('cors');
+C:\reactnative\GCS\backend\src\server.js                          7 const rateLimit = require('express-rate-limit');
+C:\reactnative\GCS\backend\src\server.js                          8 const cookieParser = require('cookie-parser');
+C:\reactnative\GCS\backend\src\server.js                          9 const db = require('./config/db');
+C:\reactnative\GCS\backend\src\server.js                         35 app.get('/api/health', async (req, res) => {
+C:\reactnative\GCS\backend\src\server.js                         37     await db.query('SELECT 1');
+C:\reactnative\GCS\backend\src\server.js                         44 app.use('/api/auth', require('./routes/auth'));
+C:\reactnative\GCS\backend\src\server.js                         45 app.use('/api/products', require('./routes/products'));
+C:\reactnative\GCS\backend\src\server.js                         46 app.use('/api/meal-options', require('./routes/meal-options'));
+C:\reactnative\GCS\backend\src\server.js                         47 app.use('/api/orders', require('./routes/orders'));
+C:\reactnative\GCS\backend\src\config\db.js                       2 const mysql = require('mysql2/promise');
+C:\reactnative\GCS\backend\src\middleware\auth.js                 2 const jwt = require('jsonwebtoken');
+C:\reactnative\GCS\backend\src\routes\auth.js                     2 const express = require('express');
+C:\reactnative\GCS\backend\src\routes\auth.js                     3 const bcrypt = require('bcryptjs');
+C:\reactnative\GCS\backend\src\routes\auth.js                     4 const jwt = require('jsonwebtoken');
+C:\reactnative\GCS\backend\src\routes\auth.js                     5 const db = require('../config/db');
+C:\reactnative\GCS\backend\src\routes\auth.js                     6 const { authenticate } = require('../middleware/auth');
+C:\reactnative\GCS\backend\src\routes\auth.js                    18 router.post('/register', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    28     const [existing] = await db.execute('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
+C:\reactnative\GCS\backend\src\routes\auth.js                    32       'INSERT INTO users (name,email,phone,password_hash,role) VALUES (?,?,?,?,?)',
+C:\reactnative\GCS\backend\src\routes\auth.js                    43 router.post('/login', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    48       'SELECT id,name,email,phone,password_hash,role,is_active FROM users WHERE email = ? LIMIT 1',
+C:\reactnative\GCS\backend\src\routes\auth.js                    60 router.get('/me', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    63       'SELECT id,name,email,phone,role FROM users WHERE id = ? AND is_active = 1 LIMIT 1',
+C:\reactnative\GCS\backend\src\routes\auth.js                    71 router.post('/fcm-token', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    75     await db.execute('UPDATE users SET fcm_token = ? WHERE id = ?', [token, req.user.id]);
+C:\reactnative\GCS\backend\src\routes\auth.js                    80 router.delete('/fcm-token', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    82     await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [req.user.id]);
+C:\reactnative\GCS\backend\src\routes\meal-options.js             1 const express = require('express');
+C:\reactnative\GCS\backend\src\routes\meal-options.js             2 const db = require('../config/db');
+C:\reactnative\GCS\backend\src\routes\meal-options.js             6 router.get('/', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\meal-options.js             9       'SELECT id,group_key,name,description,price,image_url FROM meal_options WHERE is_available=1 ORDER BY FIELD(group_key,"base","viande","accompagne…
+C:\reactnative\GCS\backend\src\routes\orders.js                   2 const express = require('express');
+C:\reactnative\GCS\backend\src\routes\orders.js                   3 const crypto = require('crypto');
+C:\reactnative\GCS\backend\src\routes\orders.js                   4 const db = require('../config/db');
+C:\reactnative\GCS\backend\src\routes\orders.js                   5 const { authenticate, requireAdmin } = require('../middleware/auth');
+C:\reactnative\GCS\backend\src\routes\orders.js                   6 const { sendRestaurantNewOrder, sendOrderReady } = require('../services/notifications');
+C:\reactnative\GCS\backend\src\routes\orders.js                  18 router.post('/', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\orders.js                  59         `SELECT id,name,price FROM products WHERE is_available=1 AND id IN (${productIds.map(() => '?').join(',')}) FOR UPDATE`,
+C:\reactnative\GCS\backend\src\routes\orders.js                  73         `SELECT id,group_key,name,price FROM meal_options WHERE is_available=1 AND id IN (${compositionIds.map(() => '?').join(',')}) FOR UPDATE`,
+C:\reactnative\GCS\backend\src\routes\orders.js                 115       `INSERT INTO orders (order_number,user_id,status,payment_method,payment_status,customer_name,customer_phone,notes,subtotal,total)
+C:\reactnative\GCS\backend\src\routes\orders.js                 121         'INSERT INTO order_items (order_id,product_id,product_name,unit_price,quantity,line_total) VALUES (?,?,?,?,?,?)',
+C:\reactnative\GCS\backend\src\routes\orders.js                 126           `INSERT INTO order_item_options (order_item_id,meal_option_id,option_group,option_name,unit_price,quantity,line_total)
+C:\reactnative\GCS\backend\src\routes\orders.js                 143 router.get('/mine', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\orders.js                 146       'SELECT id,order_number,status,payment_method,payment_status,subtotal,total,created_at,updated_at,ready_at,picked_up_at FROM orders WHERE user_id…
+C:\reactnative\GCS\backend\src\routes\orders.js                 152       `SELECT id,order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
+C:\reactnative\GCS\backend\src\routes\orders.js                 157       `SELECT order_item_id,option_group,option_name,unit_price,quantity,line_total FROM order_item_options WHERE order_item_id IN (${itemIds.map(() =>…
+C:\reactnative\GCS\backend\src\routes\orders.js                 175 router.get('/admin/all', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\orders.js                 179     let sql = 'SELECT o.*, u.email AS customer_email FROM orders o JOIN users u ON u.id=o.user_id';
+C:\reactnative\GCS\backend\src\routes\orders.js                 187       `SELECT id,order_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`,
+C:\reactnative\GCS\backend\src\routes\orders.js                 192       `SELECT order_item_id,option_group,option_name,unit_price,quantity,line_total FROM order_item_options WHERE order_item_id IN (${itemIds.map(() =>…
+C:\reactnative\GCS\backend\src\routes\orders.js                 210 router.patch('/:id/status', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\orders.js                 215       `SELECT o.*, u.fcm_token FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id = ? LIMIT 1`,
+C:\reactnative\GCS\backend\src\routes\orders.js                 224     await db.execute(`UPDATE orders SET status = ?${extras} WHERE id = ? AND status = ?`, [nextStatus, order.id, order.status]);
+C:\reactnative\GCS\backend\src\routes\products.js                 1 const express = require('express');
+C:\reactnative\GCS\backend\src\routes\products.js                 2 const path = require('path');
+C:\reactnative\GCS\backend\src\routes\products.js                 3 const fs = require('fs');
+C:\reactnative\GCS\backend\src\routes\products.js                 4 const crypto = require('crypto');
+C:\reactnative\GCS\backend\src\routes\products.js                 5 const multer = require('multer');
+C:\reactnative\GCS\backend\src\routes\products.js                 6 const db = require('../config/db');
+C:\reactnative\GCS\backend\src\routes\products.js                 7 const { authenticate, requireAdmin } = require('../middleware/auth');
+C:\reactnative\GCS\backend\src\routes\products.js                40 router.get('/', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js                43       `SELECT p.id,p.name,p.description,p.image_url,p.price,p.category,p.is_available,
+C:\reactnative\GCS\backend\src\routes\products.js                58 router.post('/:id/ratings', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js                71       `INSERT INTO product_ratings (product_id,user_id,order_id,stars,comment)
+C:\reactnative\GCS\backend\src\routes\products.js                73        ON DUPLICATE KEY UPDATE stars=VALUES(stars),comment=VALUES(comment),updated_at=CURRENT_TIMESTAMP`,
+C:\reactnative\GCS\backend\src\routes\products.js                77       'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+C:\reactnative\GCS\backend\src\routes\products.js                84 router.get('/:id/ratings', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js                89       `SELECT r.stars,r.comment,r.created_at,u.name AS customer_name
+C:\reactnative\GCS\backend\src\routes\products.js                95       'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+C:\reactnative\GCS\backend\src\routes\products.js               102 router.get('/admin/all', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               104     const [rows] = await db.execute('SELECT * FROM products ORDER BY sort_order,id');
+C:\reactnative\GCS\backend\src\routes\products.js               109 router.post('/upload-image', authenticate, requireAdmin, (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               120 router.post('/', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               132       'INSERT INTO products (name,description,image_url,price,category) VALUES (?,?,?,?,?)',
+C:\reactnative\GCS\backend\src\routes\products.js               139 router.patch('/:id', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               141     const [rows] = await db.execute('SELECT id,image_url FROM products WHERE id = ?', [req.params.id]);
+C:\reactnative\GCS\backend\src\routes\products.js               151     await db.execute('UPDATE products SET name=?,description=?,image_url=?,price=?,category=? WHERE id=?', [name, description || null, imageUrl, price,…
+C:\reactnative\GCS\backend\src\routes\products.js               157 router.delete('/:id', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               159     const [rows] = await db.execute('SELECT image_url FROM products WHERE id = ?', [req.params.id]);
+C:\reactnative\GCS\backend\src\routes\products.js               161     const [result] = await db.execute('DELETE FROM products WHERE id = ?', [req.params.id]);
+C:\reactnative\GCS\backend\src\routes\products.js               167 router.patch('/:id/availability', authenticate, requireAdmin, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js               170     const [result] = await db.execute('UPDATE products SET is_available = ? WHERE id = ?', [available ? 1 : 0, req.params.id]);
+C:\reactnative\GCS\backend\src\services\notifications.js          2 const fs = require('fs');
+C:\reactnative\GCS\backend\src\services\notifications.js          3 const path = require('path');
+C:\reactnative\GCS\backend\src\services\notifications.js         16     const admin = require('firebase-admin');
+
+
+
+
+========== 7. FONCTIONS MOBILES ET APPELS API ==========
+
+Path                                                     LineNumber Line
+----                                                     ---------- ----
+C:\reactnative\GCS\backend\public\app.js                          9 let activePanel = 'orders';
+C:\reactnative\GCS\backend\public\app.js                         29   const response = await fetch(path, {...options, headers});
+C:\reactnative\GCS\backend\public\app.js                         35   $('login-panel').classList.add('hidden');
+C:\reactnative\GCS\backend\public\app.js                         40   $('login-panel').classList.remove('hidden');
+C:\reactnative\GCS\backend\public\app.js                         46 $('login-form').addEventListener('submit', async event => {
+C:\reactnative\GCS\backend\public\app.js                         48   $('login-error').textContent = '';
+C:\reactnative\GCS\backend\public\app.js                         50     const data = await api('/api/auth/login', {method:'POST', body:JSON.stringify({email:$('email').value, password:$('password').value})});
+C:\reactnative\GCS\backend\public\app.js                         55     await loadOrders();
+C:\reactnative\GCS\backend\public\app.js                         57     refreshTimer = setInterval(() => { loadOrders().catch(showError); if (activePanel === 'products') loadProducts().catch(showError); }, 10000);
+C:\reactnative\GCS\backend\public\app.js                         58   } catch (err) { $('login-error').textContent = err.message; }
+C:\reactnative\GCS\backend\public\app.js                         61 $('refresh').addEventListener('click', () => loadOrders().catch(showError));
+C:\reactnative\GCS\backend\public\app.js                         68     await api(`/api/orders/${id}/status`, {method:'PATCH', body:JSON.stringify({status})});
+C:\reactnative\GCS\backend\public\app.js                         69     await loadOrders();
+C:\reactnative\GCS\backend\public\app.js                         86 async function loadOrders() {
+C:\reactnative\GCS\backend\public\app.js                         88   const data = await api('/api/orders/admin/all');
+C:\reactnative\GCS\backend\public\app.js                         89   const orders = data.orders || [];
+C:\reactnative\GCS\backend\public\app.js                         90   const newIds = orders.filter(o => o.status === 'pending').map(o => String(o.id));
+C:\reactnative\GCS\backend\public\app.js                        103   knownOrderIds = new Set(orders.map(o => String(o.id)));
+C:\reactnative\GCS\backend\public\app.js                        104   const counts = ['pending','accepted','preparing','ready'].map(s => `<span class="pill">${statusLabels[s]} : <strong>${orders.filter(o=>o.status===s).…
+C:\reactnative\GCS\backend\public\app.js                        106   $('orders').innerHTML = orders.length ? orders.map(orderCard).join('') : '<div class="empty">Aucune commande pour le moment.</div>';
+C:\reactnative\GCS\backend\public\app.js                        107   $('orders').querySelectorAll('button[data-status]').forEach(button => button.addEventListener('click', () => updateStatus(button.dataset.id, button.d…
+C:\reactnative\GCS\backend\public\app.js                        116   $('orders-panel').classList.toggle('hidden', panel !== 'orders');
+C:\reactnative\GCS\backend\public\app.js                        118   $('tab-orders').classList.toggle('active', panel === 'orders');
+C:\reactnative\GCS\backend\public\app.js                        120   $('tab-orders').classList.toggle('secondary', panel !== 'orders');
+C:\reactnative\GCS\backend\public\app.js                        124 $('tab-orders').addEventListener('click', () => switchPanel('orders'));
+C:\reactnative\GCS\backend\public\app.js                        170   const result = await api('/api/products/upload-image', {method:'POST', body:data});
+C:\reactnative\GCS\backend\public\app.js                        188     await api(id ? `/api/products/${id}` : '/api/products', {method:id ? 'PATCH' : 'POST', body:JSON.stringify(payload)});
+C:\reactnative\GCS\backend\public\app.js                        197   const data = await api('/api/products/admin/all');
+C:\reactnative\GCS\backend\public\app.js                        222   try { await api(`/api/products/${id}/availability`, {method:'PATCH',body:JSON.stringify({is_available:!currentlyAvailable})}); await loadProducts(); }
+C:\reactnative\GCS\backend\public\app.js                        228   try { await api(`/api/products/${id}`, {method:'DELETE'}); await loadProducts(); productMessage('Plat supprimé.'); }
+C:\reactnative\GCS\backend\src\routes\auth.js                    18 router.post('/register', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    43 router.post('/login', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    71 router.post('/fcm-token', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    74     if (!token || token.length > 4096) return res.status(400).json({ error: 'Token FCM invalide.' });
+C:\reactnative\GCS\backend\src\routes\auth.js                    75     await db.execute('UPDATE users SET fcm_token = ? WHERE id = ?', [token, req.user.id]);
+C:\reactnative\GCS\backend\src\routes\auth.js                    80 router.delete('/fcm-token', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\auth.js                    82     await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [req.user.id]);
+C:\reactnative\GCS\backend\src\routes\orders.js                 115       `INSERT INTO orders (order_number,user_id,status,payment_method,payment_status,customer_name,customer_phone,notes,subtotal,total)
+C:\reactnative\GCS\backend\src\routes\orders.js                 145     const [orders] = await db.execute(
+C:\reactnative\GCS\backend\src\routes\orders.js                 146       'SELECT id,order_number,status,payment_method,payment_status,subtotal,total,created_at,updated_at,ready_at,picked_up_at FROM orders WHERE user_id…
+C:\reactnative\GCS\backend\src\routes\orders.js                 149     if (!orders.length) return res.json({ orders: [] });
+C:\reactnative\GCS\backend\src\routes\orders.js                 150     const ids = orders.map(o => o.id);
+C:\reactnative\GCS\backend\src\routes\orders.js                 171     res.json({ orders: orders.map(o => ({ ...o, items: byOrder.get(o.id) || [] })) });
+C:\reactnative\GCS\backend\src\routes\orders.js                 179     let sql = 'SELECT o.*, u.email AS customer_email FROM orders o JOIN users u ON u.id=o.user_id';
+C:\reactnative\GCS\backend\src\routes\orders.js                 183     const [orders] = await db.execute(sql, params);
+C:\reactnative\GCS\backend\src\routes\orders.js                 184     if (!orders.length) return res.json({ orders: [] });
+C:\reactnative\GCS\backend\src\routes\orders.js                 185     const ids = orders.map(o => o.id);
+C:\reactnative\GCS\backend\src\routes\orders.js                 206     res.json({ orders: orders.map(o => ({ ...o, items: byOrder.get(o.id) || [] })) });
+C:\reactnative\GCS\backend\src\routes\orders.js                 215       `SELECT o.*, u.fcm_token FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id = ? LIMIT 1`,
+C:\reactnative\GCS\backend\src\routes\orders.js                 224     await db.execute(`UPDATE orders SET status = ?${extras} WHERE id = ? AND status = ?`, [nextStatus, order.id, order.status]);
+C:\reactnative\GCS\backend\src\routes\orders.js                 225     if (nextStatus === 'ready') sendOrderReady(order.fcm_token, order).catch(() => {});
+C:\reactnative\GCS\backend\src\routes\products.js                47        LEFT JOIN product_ratings r ON r.product_id=p.id
+C:\reactnative\GCS\backend\src\routes\products.js                58 router.post('/:id/ratings', authenticate, async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js                71       `INSERT INTO product_ratings (product_id,user_id,order_id,stars,comment)
+C:\reactnative\GCS\backend\src\routes\products.js                77       'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+C:\reactnative\GCS\backend\src\routes\products.js                84 router.get('/:id/ratings', async (req, res, next) => {
+C:\reactnative\GCS\backend\src\routes\products.js                90        FROM product_ratings r JOIN users u ON u.id=r.user_id
+C:\reactnative\GCS\backend\src\routes\products.js                95       'SELECT COALESCE(AVG(stars),0) AS average_rating,COUNT(*) AS rating_count FROM product_ratings WHERE product_id=?',
+C:\reactnative\GCS\backend\src\routes\products.js                98     res.json({ ratings: rows, summary: summary[0] });
+C:\reactnative\GCS\backend\src\services\notifications.js         12     console.warn('[FCM] Service account absent : notifications désactivées.');
+C:\reactnative\GCS\backend\src\services\notifications.js         24     console.error('[FCM] Initialisation impossible:', err.message);
+C:\reactnative\GCS\backend\src\services\notifications.js         41     console.error('[FCM] Envoi au client échoué:', err.message);
+C:\reactnative\GCS\backend\src\services\notifications.js         48   const topic = process.env.FCM_RESTAURANT_TOPIC || 'restaurant-orders';
+C:\reactnative\GCS\backend\src\services\notifications.js         57       android: { priority: 'high', notification: { sound: 'default', channelId: 'orders' } }
+C:\reactnative\GCS\backend\src\services\notifications.js         60     console.error('[FCM] Notification restaurant échouée:', err.message);
+C:\reactnative\GCS\backend\src\server copy.js                    32 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+C:\reactnative\GCS\backend\src\server copy.js                    33 app.use('/api/auth/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false }));
+C:\reactnative\GCS\backend\src\server copy.js                    35 app.get('/api/health', async (req, res) => {
+C:\reactnative\GCS\backend\src\server copy.js                    44 app.use('/api/auth', require('./routes/auth'));
+C:\reactnative\GCS\backend\src\server copy.js                    45 app.use('/api/products', require('./routes/products'));
+C:\reactnative\GCS\backend\src\server copy.js                    46 app.use('/api/meal-options', require('./routes/meal-options'));
+C:\reactnative\GCS\backend\src\server copy.js                    47 app.use('/api/orders', require('./routes/orders'));
+C:\reactnative\GCS\backend\src\server.js                         32 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+C:\reactnative\GCS\backend\src\server.js                         33 app.use('/api/auth/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false }));
+C:\reactnative\GCS\backend\src\server.js                         35 app.get('/api/health', async (req, res) => {
+C:\reactnative\GCS\backend\src\server.js                         44 app.use('/api/auth', require('./routes/auth'));
+C:\reactnative\GCS\backend\src\server.js                         45 app.use('/api/products', require('./routes/products'));
+C:\reactnative\GCS\backend\src\server.js                         46 app.use('/api/meal-options', require('./routes/meal-options'));
+C:\reactnative\GCS\backend\src\server.js                         47 app.use('/api/orders', require('./routes/orders'));
+C:\reactnative\GCS\src\api.js                                     2 import AsyncStorage from '@react-native-async-storage/async-storage';
+C:\reactnative\GCS\src\api.js                                     3 import {API_BASE_URL} from './config';
+C:\reactnative\GCS\src\api.js                                     8   return AsyncStorage.getItem(TOKEN_KEY);
+C:\reactnative\GCS\src\api.js                                    10 export async function saveToken(token) {
+C:\reactnative\GCS\src\api.js                                    11   return AsyncStorage.setItem(TOKEN_KEY, token);
+C:\reactnative\GCS\src\api.js                                    13 export async function clearToken() {
+C:\reactnative\GCS\src\api.js                                    14   return AsyncStorage.removeItem(TOKEN_KEY);
+C:\reactnative\GCS\src\api.js                                    20   const response = await fetch(`${API_BASE_URL}${path}`, {...options, headers});
+C:\reactnative\GCS\src\App copy 2.js                              5 import {api, saveToken, clearToken, getToken} from './api';
+C:\reactnative\GCS\src\App copy 2.js                              6 import {registerPushNotifications, listenForPush} from './notifications';
+C:\reactnative\GCS\src\App copy 2.js                             95 function LoginScreen({navigation, route}) {
+C:\reactnative\GCS\src\App copy 2.js                            109       const d = await api('/api/auth/login', {
+C:\reactnative\GCS\src\App copy 2.js                            119       await saveToken(d.token);
+C:\reactnative\GCS\src\App copy 2.js                            138         <Button title="Créer un compte" secondary onPress={()=>navigation.navigate('Register')}/>
+C:\reactnative\GCS\src\App copy 2.js                            144 function RegisterScreen({navigation}) {
+C:\reactnative\GCS\src\App copy 2.js                            169       await api('/api/auth/register', {
+C:\reactnative\GCS\src\App copy 2.js                            185           onPress: () => navigation.navigate('Login', { email: cleanEmail }),
+C:\reactnative\GCS\src\App copy 2.js                            222       const d = await api('/api/products');
+C:\reactnative\GCS\src\App copy 2.js                            498             <Button title="Mes commandes" secondary onPress={()=>navigation.navigate('Orders')} style={styles.navBtn}/>
+C:\reactnative\GCS\src\App copy 2.js                            528     api('/api/meal-options')
+C:\reactnative\GCS\src\App copy 2.js                            561       const me = await api('/api/auth/me');
+C:\reactnative\GCS\src\App copy 2.js                            563       const response = await api('/api/orders', {
+C:\reactnative\GCS\src\App copy 2.js                            573       navigation.replace('Orders');
+C:\reactnative\GCS\src\App copy 2.js                            621   const [ratings, setRatings] = useState([]);
+C:\reactnative\GCS\src\App copy 2.js                            623   const loadRatings = useCallback(async () => {
+C:\reactnative\GCS\src\App copy 2.js                            625       const data = await api(`/api/products/${product.id}/ratings`);
+C:\reactnative\GCS\src\App copy 2.js                            627       setRatings(Array.isArray(data?.ratings) ? data.ratings : []);
+C:\reactnative\GCS\src\App copy 2.js                            634     loadRatings();
+C:\reactnative\GCS\src\App copy 2.js                            635   }, [loadRatings]);
+C:\reactnative\GCS\src\App copy 2.js                            641       await api(`/api/products/${product.id}/ratings`, {
+C:\reactnative\GCS\src\App copy 2.js                            673         {ratings.map((rating,index) => (
+C:\reactnative\GCS\src\App copy 2.js                            735       const me = await api('/api/auth/me');
+C:\reactnative\GCS\src\App copy 2.js                            741       const response = await api('/api/orders', {
+C:\reactnative\GCS\src\App copy 2.js                            765       navigation.replace('Orders');
+C:\reactnative\GCS\src\App copy 2.js                            874 function OrdersScreen() {
+C:\reactnative\GCS\src\App copy 2.js                            875   const [orders,setOrders]=useState([]); const [loading,setLoading]=useState(true);
+C:\reactnative\GCS\src\App copy 2.js                            880       const d = await api('/api/orders/mine');
+C:\reactnative\GCS\src\App copy 2.js                            881       setOrders(Array.isArray(d?.orders) ? d.orders : []);
+C:\reactnative\GCS\src\App copy 2.js                            882       debugLog('COMMANDES', `Chargement réussi : ${Array.isArray(d?.orders) ? d.orders.length : 0} commande(s)`);
+C:\reactnative\GCS\src\App copy 2.js                            906           data={orders} 
+C:\reactnative\GCS\src\App copy 2.js                            935     api('/api/auth/me')
+C:\reactnative\GCS\src\App copy 2.js                            958             await clearToken();
+C:\reactnative\GCS\src\App copy 2.js                            982           <Stack.Screen name="Login" component={LoginScreen} options={{headerShown:false}}/>
+C:\reactnative\GCS\src\App copy 2.js                            983           <Stack.Screen name="Register" component={RegisterScreen} options={{title:'Inscription'}}/>
+C:\reactnative\GCS\src\App copy 2.js                            991           <Stack.Screen name="Orders" component={OrdersScreen} options={{title:'Mes commandes'}}/>
+C:\reactnative\GCS\src\App copy 2.js                           1016       const response = await api('/api/auth/me');
+C:\reactnative\GCS\src\App copy 2.js                           1019         throw new Error('La route /api/auth/me n’a pas renvoyé response.user.');
+C:\reactnative\GCS\src\App copy 2.js                           1030         await clearToken();
+C:\reactnative\GCS\src\App copy 2.js                           1059         await registerPushNotifications();
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                  6 import {api, saveToken, clearToken, getToken} from './api';
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                  7 import {registerPushNotifications, listenForPush} from './notifications';
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                 55 function LoginScreen({navigation}) {
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                 68       const d = await api('/api/auth/login', {
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                 78       await saveToken(d.token);
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                 92     <Button title="Créer un compte" secondary onPress={()=>navigation.navigate('Register')}/>
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                 95 function RegisterScreen() {
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                121       const d = await api('/api/auth/register', {
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                135           'Inscription reçue, mais le serveur n’a pas renvoyé de jeton. Vérifiez la réponse de la route /api/auth/register.'
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                140       await saveToken(d.token);
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                143       const me = await api('/api/auth/me');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                172       const d = await api('/api/products');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                198     <View style={styles.bottomNav}><Button title="Mes commandes" secondary onPress={()=>navigation.navigate('Orders')}/><Button title="Mon compte" seco…
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                209       const me=await api('/api/auth/me');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                210       const d=await api('/api/orders',{method:'POST',body:JSON.stringify({customer_name:me.user.name,customer_phone:me.user.phone,notes,items:selected.…
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                211       setCart({}); Alert.alert('Commande confirmée',`Votre numéro : ${d.order.order_number}`); navigation.replace('Orders');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                222 function OrdersScreen() {
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                223   const [orders,setOrders]=useState([]); const [loading,setLoading]=useState(true);
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                227       const d = await api('/api/orders/mine');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                228       setOrders(Array.isArray(d?.orders) ? d.orders : []);
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                229       debugLog('COMMANDES', `Chargement réussi : ${Array.isArray(d?.orders) ? d.orders.length : 0} commande(s)`);
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                239     {loading?<ActivityIndicator/>:<FlatList data={orders} keyExtractor={o=>String(o.id)} contentContainerStyle={styles.list} ListEmptyComponent={<Text>…
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                250     api('/api/auth/me')
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                261     await clearToken();
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                272     {!auth.loggedIn ? <><Stack.Screen name="Login" component={LoginScreen} options={{headerShown:false}}/><Stack.Screen name="Register" component={Regi…
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                273     <><Stack.Screen name="Menu" component={MenuScreen} options={{headerShown:false}}/><Stack.Screen name="Cart" component={CartScreen} options={{title:…
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                293       const response = await api('/api/auth/me');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                296         throw new Error('La route /api/auth/me n’a pas renvoyé response.user.');
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                307         await clearToken();
+C:\reactnative\GCS\src\App_FASTFOOD_connexion.js                336         await registerPushNotifications();
+C:\reactnative\GCS\src\App.js                                     5 import {api, saveToken, clearToken, getToken} from './api';
+C:\reactnative\GCS\src\App.js                                     6 import {registerPushNotifications, listenForPush} from './notifications';
+C:\reactnative\GCS\src\App.js                                    96 function LoginScreen({navigation, route}) {
+C:\reactnative\GCS\src\App.js                                   110       const d = await api('/api/auth/login', {
+C:\reactnative\GCS\src\App.js                                   120       await saveToken(d.token);
+C:\reactnative\GCS\src\App.js                                   139         <Button title="Créer un compte" secondary onPress={()=>navigation.navigate('Register')}/>
+C:\reactnative\GCS\src\App.js                                   145 function RegisterScreen({navigation}) {
+C:\reactnative\GCS\src\App.js                                   170       await api('/api/auth/register', {
+C:\reactnative\GCS\src\App.js                                   186           onPress: () => navigation.navigate('Login', { email: cleanEmail }),
+C:\reactnative\GCS\src\App.js                                   223       const d = await api('/api/products');
+C:\reactnative\GCS\src\App.js                                   504             <Button title="Mes commandes" secondary onPress={()=>navigation.navigate('Orders')} style={styles.navBtn}/>
+C:\reactnative\GCS\src\App.js                                   536     api('/api/meal-options')
+C:\reactnative\GCS\src\App.js                                   576       const me = await api('/api/auth/me');
+C:\reactnative\GCS\src\App.js                                   578       const response = await api('/api/orders', {
+C:\reactnative\GCS\src\App.js                                   588       navigation.replace('Orders');
+C:\reactnative\GCS\src\App.js                                   636   const [ratings, setRatings] = useState([]);
+C:\reactnative\GCS\src\App.js                                   638   const loadRatings = useCallback(async () => {
+C:\reactnative\GCS\src\App.js                                   640       const data = await api(`/api/products/${product.id}/ratings`);
+C:\reactnative\GCS\src\App.js                                   642       setRatings(Array.isArray(data?.ratings) ? data.ratings : []);
+C:\reactnative\GCS\src\App.js                                   649     loadRatings();
+C:\reactnative\GCS\src\App.js                                   650   }, [loadRatings]);
+C:\reactnative\GCS\src\App.js                                   656       await api(`/api/products/${product.id}/ratings`, {
+C:\reactnative\GCS\src\App.js                                   688         {ratings.map((rating,index) => (
+C:\reactnative\GCS\src\App.js                                   750       const me = await api('/api/auth/me');
+C:\reactnative\GCS\src\App.js                                   756       const response = await api('/api/orders', {
+C:\reactnative\GCS\src\App.js                                   780       navigation.replace('Orders');
+C:\reactnative\GCS\src\App.js                                   889 function OrdersScreen() {
+C:\reactnative\GCS\src\App.js                                   890   const [orders,setOrders]=useState([]); const [loading,setLoading]=useState(true);
+C:\reactnative\GCS\src\App.js                                   895       const d = await api('/api/orders/mine');
+C:\reactnative\GCS\src\App.js                                   896       setOrders(Array.isArray(d?.orders) ? d.orders : []);
+C:\reactnative\GCS\src\App.js                                   897       debugLog('COMMANDES', `Chargement réussi : ${Array.isArray(d?.orders) ? d.orders.length : 0} commande(s)`);
+C:\reactnative\GCS\src\App.js                                   921           data={orders} 
+C:\reactnative\GCS\src\App.js                                   950     api('/api/auth/me')
+C:\reactnative\GCS\src\App.js                                   973             await clearToken();
+C:\reactnative\GCS\src\App.js                                   997           <Stack.Screen name="Login" component={LoginScreen} options={{headerShown:false}}/>
+C:\reactnative\GCS\src\App.js                                   998           <Stack.Screen name="Register" component={RegisterScreen} options={{title:'Inscription'}}/>
+C:\reactnative\GCS\src\App.js                                  1006           <Stack.Screen name="Orders" component={OrdersScreen} options={{title:'Mes commandes'}}/>
+C:\reactnative\GCS\src\App.js                                  1031       const response = await api('/api/auth/me');
+C:\reactnative\GCS\src\App.js                                  1034         throw new Error('La route /api/auth/me n’a pas renvoyé response.user.');
+C:\reactnative\GCS\src\App.js                                  1045         await clearToken();
+C:\reactnative\GCS\src\App.js                                  1074         await registerPushNotifications();
+C:\reactnative\GCS\src\config.js                                  2 export const API_BASE_URL = 'gcs-byteatomeneons-com-216696.hostingersite.com';
+C:\reactnative\GCS\src\notifications.js                           6 export async function registerPushNotifications() {
+C:\reactnative\GCS\src\notifications.js                          14     if (token) await api('/api/auth/fcm-token', {method:'POST', body:JSON.stringify({token})});
+C:\reactnative\GCS\src\notifications.js                          17     console.warn('FCM non configuré ou permission refusée:', error.message);
+C:\reactnative\GCS\index.js                                       9 AppRegistry.registerComponent(appName, () => App);
+
+
+
+
+========== 8. TESTS DE CONFIGURATION LOCALE ==========
+Dossiers node_modules :
+PRESENT : .\node_modules
+PRESENT : .\backend\node_modules
+Fichiers de configuration sensibles présents (n'affiche pas leur contenu) :
+ABSENT : .env
+PRESENT : backend\.env
+ABSENT : backend\src\.env
+Entrées serveur possibles :
+ABSENT : server.js
+PRESENT : backend\server.js
+PRESENT : backend\src\server.js
+
+
+
+========== 9. ETAT HTTP DU SERVEUR EN LIGNE ==========
+200 | https://gcs.byteatomeneons.com/
+404 | https://gcs.byteatomeneons.com/api/health | Response status code does not indicate success: 404 (Not Found).
+404 | https://gcs.byteatomeneons.com/api/products | Response status code does not indicate success: 404 (Not Found).
+404 | https://gcs.byteatomeneons.com/api/meal-options | Response status code does not indicate success: 404 (Not Found).
+403 | https://gcs.byteatomeneons.com/admin/ | Response status code does not indicate success: 403 (Forbidden).
+200 | https://gcs.byteatomeneons.com/admin/app.js
+
