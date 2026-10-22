@@ -34,11 +34,15 @@ router.post('/', authenticate, async (req, res, next) => {
       if (!Number.isSafeInteger(qty) || qty < 1 || qty > 20) return res.status(400).json({ error: 'Quantité invalide (1 à 20).' });
       if (item.type === 'composition' || Array.isArray(item.option_ids)) {
         const optionIds = [...new Set((item.option_ids || []).map(Number))];
-        if (optionIds.length < 4 || optionIds.length > 30 ||
-            optionIds.some(id => !Number.isSafeInteger(id) || id <= 0) ||
-            optionIds.length !== (item.option_ids || []).length) {
-          return res.status(400).json({ error: 'Composition invalide : sélectionnez une base, une viande, un accompagnement et une boisson.' });
-        }
+        if (
+  optionIds.length < 1 ||
+  optionIds.some(id => !Number.isSafeInteger(id) || id <= 0) ||
+  optionIds.length !== (item.option_ids || []).length
+) {
+  return res.status(400).json({
+    error: 'Composition invalide : choisissez au moins une option disponible.'
+  });
+}
         normalized.push({ type: 'composition', quantity: qty, option_ids: optionIds });
       } else {
         const id = Number(item.product_id);
@@ -90,18 +94,7 @@ router.post('/', authenticate, async (req, res, next) => {
         unitPrice = Number(p.price);
       } else {
         selectedOptions = item.option_ids.map(id => optionsById.get(id));
-        const groupCounts = new Map();
-        for (const option of selectedOptions) groupCounts.set(option.group_key, (groupCounts.get(option.group_key) || 0) + 1);
-        for (const required of ['base','viande','accompagnement','boisson']) {
-          if (groupCounts.get(required) !== 1) {
-            await conn.rollback();
-            return res.status(400).json({ error: 'Choisissez exactement une base, une viande, un accompagnement et une boisson.' });
-          }
-        }
-        if (groupCounts.get('legumes') > 5 || groupCounts.get('supplements') > 10) {
-          await conn.rollback();
-          return res.status(400).json({ error: 'Trop de légumes ou de suppléments sélectionnés.' });
-        }
+        
         unitPrice = Math.round(selectedOptions.reduce((sum, o) => sum + Number(o.price), 0) * 100) / 100;
         productName = 'Repas personnalisé';
       }
