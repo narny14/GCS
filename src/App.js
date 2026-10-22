@@ -562,36 +562,62 @@ function toggleOption(group, option) {
 }
 
 
-  async function placeCustomOrder() {
-    if (busy) return;
-    const required = ['base','viande','accompagnement','boisson'];
-    if (required.some(group => (selected[group] || []).length !== 1)) {
-      Alert.alert('Composition incomplète', 'Choisissez une base, une viande, un accompagnement et une boisson.');
-      return;
-    }
-    const optionIds = Object.values(selected).flat();
-    if (!optionIds.length) return;
-    setBusy(true);
-    try {
-      const me = await api('/api/auth/me');
-      if (!me?.user) throw new Error('Impossible de récupérer votre compte.');
-      const response = await api('/api/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          customer_name: me.user.name,
-          customer_phone: me.user.phone,
-          notes,
-          items: [{type:'composition', option_ids: optionIds, quantity:1}],
-        }),
-      });
-      Alert.alert('Commande confirmée', `Numéro : ${response.order.order_number}\nTotal confirmé : ${money(response.order.total)}`);
-      navigation.replace('Orders');
-    } catch (error) {
-      Alert.alert('Commande impossible', error?.message || 'Une erreur est survenue.');
-    } finally {
-      setBusy(false);
-    }
+  
+async function placeCustomOrder() {
+  if (busy) return;
+
+  const optionIds = Object.values(selected).flat();
+
+  if (optionIds.length === 0) {
+    Alert.alert(
+      'Composition vide',
+      'Choisissez au moins un ingrédient ou une option avant de commander.'
+    );
+    return;
   }
+
+  setBusy(true);
+
+  try {
+    const me = await api('/api/auth/me');
+
+    if (!me?.user) {
+      throw new Error('Impossible de récupérer votre compte.');
+    }
+
+    const response = await api('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify({
+        customer_name: me.user.name,
+        customer_phone: me.user.phone,
+        notes,
+        items: [
+          {
+            type: 'composition',
+            option_ids: optionIds,
+            quantity: 1,
+          },
+        ],
+      }),
+    });
+
+    Alert.alert(
+      'Commande confirmée',
+      `Numéro : ${response.order.order_number}\nTotal confirmé : ${money(response.order.total)}`
+    );
+
+    navigation.replace('Orders');
+  } catch (error) {
+    Alert.alert(
+      'Commande impossible',
+      error?.message || 'Une erreur est survenue.'
+    );
+  } finally {
+    setBusy(false);
+  }    
+}
+
+
 
   return (
     <SafeAreaView style={styles.screen}>
