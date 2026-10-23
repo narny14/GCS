@@ -4,7 +4,6 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {api, saveToken, clearToken, getToken} from './api';
 import {registerPushNotifications, listenForPush} from './notifications';
-
 const Stack = createNativeStackNavigator();
 const AuthContext = createContext(null);
 const DEBUG_APP = __DEV__;
@@ -146,54 +145,78 @@ function RegisterScreen({navigation}) {
   const [name,setName] = useState(''); const [email,setEmail] = useState(''); const [phone,setPhone] = useState(''); const [password,setPassword] = useState('');
   const [busy,setBusy] = useState(false);
   
-  async function submit() {
-    if (busy) return;
+  
+async function submit() {
+  if (busy) return;
 
-    const cleanName = name.trim();
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPhone = phone.trim();
+  const cleanName = name.trim();
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPhone = phone.trim();
 
-    if (!cleanName || !cleanEmail || !password) {
-      Alert.alert('Champs requis', 'Remplissez le nom, l’e-mail et le mot de passe.');
-      return;
-    }
-    if (password.length < 10) {
-      Alert.alert('Mot de passe invalide', 'Utilisez au moins 10 caractères.');
-      return;
-    }
-
-    setBusy(true);
-    debugLog('INSCRIPTION', 'Début');
-
-    try {
-      debugLog('INSCRIPTION', 'Envoi de la requête API');
-      await api('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: cleanName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          password,
-        }),
-      });
-
-      debugLog('INSCRIPTION', 'Compte créé avec succès');
-      Alert.alert(
-        'Inscription réussie',
-        'Votre compte a été créé. Vous pouvez maintenant vous connecter avec votre e-mail et votre mot de passe.',
-        [{
-          text: 'Aller à la connexion',
-          onPress: () => navigation.navigate('Login', { email: cleanEmail }),
-        }],
-        { cancelable: false }
-      );
-    } catch (error) {
-      debugError('INSCRIPTION', error);
-    } finally {
-      debugLog('INSCRIPTION', 'Fin du chargement');
-      setBusy(false);
-    }
+  if (!cleanName || !cleanEmail || !password) {
+    Alert.alert(
+      'Champs requis',
+      'Remplissez le nom, l’e-mail et le mot de passe.',
+    );
+    return;
   }
+
+  if (password.length < 10) {
+    Alert.alert(
+      'Mot de passe invalide',
+      'Utilisez au moins 10 caractères.',
+    );
+    return;
+  }
+
+  setBusy(true);
+  debugLog('INSCRIPTION', 'Début');
+
+  try {
+    debugLog('INSCRIPTION', 'Envoi de la requête API');
+
+    const d = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        password,
+      }),
+    });
+
+    if (!d?.token) {
+      throw new Error(
+        "Le serveur n'a pas renvoyé de jeton de connexion.",
+      );
+    }
+
+    debugLog('INSCRIPTION', 'Compte créé avec succès');
+
+    // Enregistrement du token FCM sans remplacer la session
+    // éventuellement utilisée par un autre compte sur ce téléphone.
+    // L'association FCM sera faite après la connexion du nouveau compte.
+
+    Alert.alert(
+      'Inscription réussie',
+      'Votre compte a été créé. Connectez-vous pour activer les notifications.',
+      [
+        {
+          text: 'Aller à la connexion',
+          onPress: () =>
+            navigation.navigate('Login', {email: cleanEmail}),
+        },
+      ],
+      {cancelable: false},
+    );
+  } catch (error) {
+    debugError('INSCRIPTION', error);
+  } finally {
+    debugLog('INSCRIPTION', 'Fin du chargement');
+    setBusy(false);
+  }
+}
+
 
   return (
     <SafeAreaView style={styles.screen}>
