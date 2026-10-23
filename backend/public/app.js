@@ -69,6 +69,7 @@ function showLoggedOut() {
 function showError(err) {
   $('global-error').textContent = `${err.message || String(err)}${err.url ? ` — ${err.url}` : ''}`;
 }
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
