@@ -245,19 +245,19 @@ function RegisterScreen({navigation}) {
         'Votre compte a été créé et vous êtes connecté.',
       );
     } catch (error) {
-      debugError('INSCRIPTION', error, false);
+  const details = String(
+    error?.stack || error?.message || error || 'Erreur inconnue'
+  );
 
-      const message =
-        error?.message ||
-        'Une erreur inattendue empêche la création du compte.';
+  console.error('[INSCRIPTION] Erreur complète :', details);
 
-      setStatus('Échec de l’inscription');
-
-      Alert.alert('Inscription impossible', message);
-    } finally {
-      setBusy(false);
-      debugLog('INSCRIPTION', 'Fin du chargement');
-    }
+  Alert.alert(
+    'Erreur technique inscription',
+    details.substring(0, 3000)
+  );
+} finally {
+  setBusy(false);
+}
   }
 
   return (
