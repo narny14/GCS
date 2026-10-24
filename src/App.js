@@ -145,58 +145,115 @@ function LoginScreen({navigation, route}) {
 }
 
 
+
 function RegisterScreen({navigation}) {
   const auth = useContext(AuthContext);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
 
   async function submit() {
     if (busy) return;
+
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
 
     if (!cleanName || !cleanEmail || !cleanPhone || !password) {
-      Alert.alert('Champs requis', 'Remplissez le nom, l’e-mail, le téléphone et le mot de passe.');
+      Alert.alert(
+        'Champs requis',
+        'Remplissez le nom, l’e-mail, le téléphone et le mot de passe.',
+      );
       return;
     }
+
     if (password.length < 10 || password.length > 72) {
-      Alert.alert('Mot de passe invalide', 'Utilisez entre 10 et 72 caractères.');
+      Alert.alert(
+        'Mot de passe invalide',
+        'Utilisez entre 10 et 72 caractères.',
+      );
       return;
     }
 
     setBusy(true);
+    setStatus('Préparation de l’inscription…');
     debugLog('INSCRIPTION', 'Début');
+
     try {
-      // Le token FCM est obtenu au clic, avant la création du compte.
-      const fcm = await preparePushRegistration();
+      setStatus('Préparation des notifications…');
+      debugLog('INSCRIPTION', 'Préparation FCM');
+
+      // Évite d'attendre indéfiniment si la préparation FCM bloque.
+      const fcm = await Promise.race([
+        preparePushRegistration(),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(
+              new Error(
+                'La préparation FCM prend trop de temps. Vérifiez la configuration Firebase.',
+              ),
+            ),
+            15000,
+          ),
+        ),
+      ]);
+
       if (!fcm?.token || !fcm?.installationId) {
-        throw new Error('Impossible d’obtenir le token FCM. Vérifiez les notifications puis réessayez.');
+        throw new Error(
+          'Le token FCM ou l’identifiant d’installation est absent.',
+        );
       }
 
-      // Une seule requête envoie le compte et le token FCM au serveur.
+      setStatus('Création du compte sur le serveur…');
+      debugLog('INSCRIPTION', 'Envoi de la requête API');
+
       const d = await api('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({name: cleanName, email: cleanEmail, phone: cleanPhone, password, fcm}),
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          password,
+          fcm,
+        }),
       });
 
       if (!d?.token || !d?.user?.id || d?.fcmRegistered !== true) {
-        throw new Error('Le serveur n’a pas confirmé la création du compte et l’enregistrement FCM.');
+        throw new Error(
+          'Réponse serveur incomplète. Vérifiez la route /api/auth/register.',
+        );
       }
 
+      setStatus('Connexion à votre compte…');
       await saveToken(d.token);
+
       const connected = await auth.reload();
+
       if (!connected) {
-        throw new Error('Compte créé, mais la connexion automatique a échoué. Connectez-vous avec votre nouveau compte.');
+        throw new Error(
+          'Le compte a peut-être été créé, mais la connexion automatique a échoué. Essayez de vous connecter.',
+        );
       }
 
-      debugLog('INSCRIPTION', `Compte ${d.user.id} et token FCM enregistrés`);
-      Alert.alert('Inscription réussie', 'Votre compte est créé, le token FCM est enregistré et vous êtes connecté.');
+      debugLog('INSCRIPTION', `Compte ${d.user.id} créé`);
+      Alert.alert(
+        'Inscription réussie',
+        'Votre compte a été créé et vous êtes connecté.',
+      );
     } catch (error) {
-      debugError('INSCRIPTION', error);
+      debugError('INSCRIPTION', error, false);
+
+      const message =
+        error?.message ||
+        'Une erreur inattendue empêche la création du compte.';
+
+      setStatus('Échec de l’inscription');
+
+      Alert.alert('Inscription impossible', message);
     } finally {
       setBusy(false);
       debugLog('INSCRIPTION', 'Fin du chargement');
@@ -205,17 +262,70 @@ function RegisterScreen({navigation}) {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Créer un compte</Text>
-        <Field label="Nom complet" value={name} onChangeText={setName} />
-        <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <Field label="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <Field label="Mot de passe (10 à 72 caractères)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
-        <Button title={busy ? 'Création et connexion…' : 'Créer mon compte'} onPress={submit} disabled={busy} />
+
+        <Field
+          label="Nom complet"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
+
+        <Field
+          label="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <Field
+          label="Téléphone"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+
+        <Field
+          label="Mot de passe (10 à 72 caractères)"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+
+        {busy && (
+          <View style={{alignItems: 'center', marginVertical: 12}}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.description}>{status}</Text>
+          </View>
+        )}
+
+        {!busy && status !== '' && (
+          <Text style={styles.description}>{status}</Text>
+        )}
+
+        <Button
+          title={busy ? 'Inscription en cours…' : 'Créer mon compte'}
+          onPress={submit}
+          disabled={busy}
+        />
+
+        <Button
+          title="Retour à la connexion"
+          secondary
+          onPress={() => navigation.goBack()}
+          disabled={busy}
+        />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 
 
