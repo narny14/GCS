@@ -3,7 +3,7 @@ import {ActivityIndicator, Alert, FlatList, Image, SafeAreaView, ScrollView, Sta
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {api, saveToken, clearToken, getToken} from './api';
-import {registerPushNotifications, listenForPush} from './notifications';
+import {registerPushNotifications, listenForPush} from './notifications1';
 const Stack = createNativeStackNavigator();
 const AuthContext = createContext(null);
 const DEBUG_APP = __DEV__;
@@ -144,7 +144,6 @@ function LoginScreen({navigation, route}) {
 
 function RegisterScreen({navigation}) {
   const auth = useContext(AuthContext);
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -153,76 +152,46 @@ function RegisterScreen({navigation}) {
 
   async function submit() {
     if (busy) return;
-
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
 
     if (!cleanName || !cleanEmail || !cleanPhone || !password) {
-      Alert.alert(
-        'Champs requis',
-        'Remplissez le nom, l’e-mail, le téléphone et le mot de passe.',
-      );
+      Alert.alert('Champs requis', 'Remplissez le nom, l’e-mail, le téléphone et le mot de passe.');
       return;
     }
-
     if (password.length < 10 || password.length > 72) {
-      Alert.alert(
-        'Mot de passe invalide',
-        'Utilisez entre 10 et 72 caractères.',
-      );
+      Alert.alert('Mot de passe invalide', 'Utilisez entre 10 et 72 caractères.');
       return;
     }
 
     setBusy(true);
     debugLog('INSCRIPTION', 'Début');
-
     try {
-      // 1. Créer le nouveau compte sur le serveur
+      // Le token FCM est obtenu au clic, avant la création du compte.
+      const fcm = await preparePushRegistration();
+      if (!fcm?.token || !fcm?.installationId) {
+        throw new Error('Impossible d’obtenir le token FCM. Vérifiez les notifications puis réessayez.');
+      }
+
+      // Une seule requête envoie le compte et le token FCM au serveur.
       const d = await api('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({
-          name: cleanName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          password,
-        }),
+        body: JSON.stringify({name: cleanName, email: cleanEmail, phone: cleanPhone, password, fcm}),
       });
 
-      if (!d?.token || !d?.user?.id) {
-        throw new Error(
-          "Le serveur n'a pas renvoyé le compte et son jeton de connexion.",
-        );
+      if (!d?.token || !d?.user?.id || d?.fcmRegistered !== true) {
+        throw new Error('Le serveur n’a pas confirmé la création du compte et l’enregistrement FCM.');
       }
 
-      debugLog('INSCRIPTION', `Compte créé : ID ${d.user.id}`);
-
-      // 2. Enregistrer le JWT du nouveau compte sur le téléphone
       await saveToken(d.token);
-      debugLog('INSCRIPTION', 'Jeton de session sauvegardé');
-
-      // 3. Valider la session : loggedIn passera à true
-      // et le useEffect de App() lancera l'enregistrement FCM.
       const connected = await auth.reload();
-
       if (!connected) {
-        throw new Error(
-          "Compte créé, mais la connexion automatique a échoué. Connectez-vous avec votre nouveau compte.",
-        );
+        throw new Error('Compte créé, mais la connexion automatique a échoué. Connectez-vous avec votre nouveau compte.');
       }
 
-      debugLog(
-        'INSCRIPTION',
-        'Connexion réussie ; activation FCM en cours',
-      );
-
-      // Le navigateur bascule automatiquement vers Menu.
-      // Le useEffect de App() appellera registerPushNotifications()
-      // avec le JWT du nouveau compte.
-      Alert.alert(
-        'Inscription réussie',
-        'Votre compte est créé et vous êtes connecté. Autorisez les notifications pour activer les alertes de commande.',
-      );
+      debugLog('INSCRIPTION', `Compte ${d.user.id} et token FCM enregistrés`);
+      Alert.alert('Inscription réussie', 'Votre compte est créé, le token FCM est enregistré et vous êtes connecté.');
     } catch (error) {
       debugError('INSCRIPTION', error);
     } finally {
@@ -235,45 +204,16 @@ function RegisterScreen({navigation}) {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Créer un compte</Text>
-
-        <Field
-          label="Nom complet"
-          value={name}
-          onChangeText={setName}
-        />
-
-        <Field
-          label="E-mail"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        <Field
-          label="Téléphone"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
-
-        <Field
-          label="Mot de passe (10 à 72 caractères)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-
-        <Button
-          title={busy ? 'Création et connexion…' : 'Créer mon compte'}
-          onPress={submit}
-          disabled={busy}
-        />
+        <Field label="Nom complet" value={name} onChangeText={setName} />
+        <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Field label="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        <Field label="Mot de passe (10 à 72 caractères)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
+        <Button title={busy ? 'Création et connexion…' : 'Créer mon compte'} onPress={submit} disabled={busy} />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 
 // --- ECRAN MENU AVEC LE NOUVEAU DESIGN ---
