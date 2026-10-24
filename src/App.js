@@ -3,7 +3,10 @@ import {ActivityIndicator, Alert, FlatList, Image, SafeAreaView, ScrollView, Sta
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {api, saveToken, clearToken, getToken} from './api';
-import {registerPushNotifications, listenForPush} from './notifications';
+import {
+  preparePushRegistration,
+  registerPushNotifications,
+  listenForPush,} from './notifications';
 const Stack = createNativeStackNavigator();
 const AuthContext = createContext(null);
 const DEBUG_APP = __DEV__;
