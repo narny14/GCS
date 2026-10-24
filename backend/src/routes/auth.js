@@ -1,4 +1,7 @@
-
+const {
+  registerDevice,
+  deactivateDevice,
+} = require('../services/notifications');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -14,6 +17,36 @@ function makeToken(user) {
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d', issuer: 'fastfood-one' }
   );
 }
+
+router.post('/fcm-token', authenticate, async (req, res, next) => {
+  try {
+    const token = String(req.body.token || '').trim();
+
+    if (!token || token.length > 4096) {
+      return res.status(400).json({ error: 'Token FCM invalide.' });
+    }
+
+    const [users] = await db.execute(
+      'SELECT id FROM users WHERE id = ? AND is_active = 1 LIMIT 1',
+      [req.user.id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        error: 'Compte connecté introuvable.'
+      });
+    }
+
+    await db.execute(
+      'UPDATE users SET fcm_token = ? WHERE id = ?',
+      [token, req.user.id]
+    );
+
+    return res.json({ ok: true, userId: req.user.id });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post('/register', async (req, res, next) => {
   try {
@@ -68,14 +101,78 @@ router.get('/me', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
 router.post('/fcm-token', authenticate, async (req, res, next) => {
   try {
     const token = String(req.body.token || '').trim();
-    if (!token || token.length > 4096) return res.status(400).json({ error: 'Token FCM invalide.' });
-    await db.execute('UPDATE users SET fcm_token = ? WHERE id = ?', [token, req.user.id]);
-    return res.json({ ok: true });
-  } catch (err) { next(err); }
+    const installationId = String(
+      req.body.installationId || '',
+    ).trim();
+    const platform = String(req.body.platform || 'unknown');
+    const deviceLabel = String(
+      req.body.deviceLabel || '',
+    ).trim().slice(0, 160) || null;
+
+    if (!token || token.length > 4096) {
+      return res.status(400).json({
+        error: 'Token FCM invalide.',
+      });
+    }
+
+    if (!installationId || installationId.length > 128) {
+      return res.status(400).json({
+        error: 'Identifiant d’installation invalide.',
+      });
+    }
+
+    const [users] = await db.execute(
+      'SELECT id FROM users WHERE id = ? AND is_active = 1 LIMIT 1',
+      [req.user.id],
+    );
+
+    if (!users.length) {
+      return res.status(404).json({
+        error: 'Compte connecté introuvable.',
+      });
+    }
+
+    await registerDevice({
+      userId: req.user.id,
+      installationId,
+      token,
+      platform,
+      deviceLabel,
+    });
+
+    return res.json({ok: true});
+  } catch (error) {
+    next(error);
+  }
 });
+
+router.delete('/fcm-token', authenticate, async (req, res, next) => {
+  try {
+    const installationId = String(
+      req.body.installationId || '',
+    ).trim();
+
+    if (!installationId || installationId.length > 128) {
+      return res.status(400).json({
+        error: 'Identifiant d’installation invalide.',
+      });
+    }
+
+    await deactivateDevice({
+      userId: req.user.id,
+      installationId,
+    });
+
+    return res.json({ok: true});
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 router.delete('/fcm-token', authenticate, async (req, res, next) => {
   try {

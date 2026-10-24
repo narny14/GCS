@@ -141,96 +141,140 @@ function LoginScreen({navigation, route}) {
   );
 }
 
+
 function RegisterScreen({navigation}) {
-  const [name,setName] = useState(''); const [email,setEmail] = useState(''); const [phone,setPhone] = useState(''); const [password,setPassword] = useState('');
-  const [busy,setBusy] = useState(false);
-  
-  
-async function submit() {
-  if (busy) return;
+  const auth = useContext(AuthContext);
 
-  const cleanName = name.trim();
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanPhone = phone.trim();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  if (!cleanName || !cleanEmail || !password) {
-    Alert.alert(
-      'Champs requis',
-      'Remplissez le nom, l’e-mail et le mot de passe.',
-    );
-    return;
-  }
+  async function submit() {
+    if (busy) return;
 
-  if (password.length < 10) {
-    Alert.alert(
-      'Mot de passe invalide',
-      'Utilisez au moins 10 caractères.',
-    );
-    return;
-  }
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
 
-  setBusy(true);
-  debugLog('INSCRIPTION', 'Début');
-
-  try {
-    debugLog('INSCRIPTION', 'Envoi de la requête API');
-
-    const d = await api('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
-        password,
-      }),
-    });
-
-    if (!d?.token) {
-      throw new Error(
-        "Le serveur n'a pas renvoyé de jeton de connexion.",
+    if (!cleanName || !cleanEmail || !cleanPhone || !password) {
+      Alert.alert(
+        'Champs requis',
+        'Remplissez le nom, l’e-mail, le téléphone et le mot de passe.',
       );
+      return;
     }
 
-    debugLog('INSCRIPTION', 'Compte créé avec succès');
+    if (password.length < 10 || password.length > 72) {
+      Alert.alert(
+        'Mot de passe invalide',
+        'Utilisez entre 10 et 72 caractères.',
+      );
+      return;
+    }
 
-    // Enregistrement du token FCM sans remplacer la session
-    // éventuellement utilisée par un autre compte sur ce téléphone.
-    // L'association FCM sera faite après la connexion du nouveau compte.
+    setBusy(true);
+    debugLog('INSCRIPTION', 'Début');
 
-    Alert.alert(
-      'Inscription réussie',
-      'Votre compte a été créé. Connectez-vous pour activer les notifications.',
-      [
-        {
-          text: 'Aller à la connexion',
-          onPress: () =>
-            navigation.navigate('Login', {email: cleanEmail}),
-        },
-      ],
-      {cancelable: false},
-    );
-  } catch (error) {
-    debugError('INSCRIPTION', error);
-  } finally {
-    debugLog('INSCRIPTION', 'Fin du chargement');
-    setBusy(false);
+    try {
+      // 1. Créer le nouveau compte sur le serveur
+      const d = await api('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          password,
+        }),
+      });
+
+      if (!d?.token || !d?.user?.id) {
+        throw new Error(
+          "Le serveur n'a pas renvoyé le compte et son jeton de connexion.",
+        );
+      }
+
+      debugLog('INSCRIPTION', `Compte créé : ID ${d.user.id}`);
+
+      // 2. Enregistrer le JWT du nouveau compte sur le téléphone
+      await saveToken(d.token);
+      debugLog('INSCRIPTION', 'Jeton de session sauvegardé');
+
+      // 3. Valider la session : loggedIn passera à true
+      // et le useEffect de App() lancera l'enregistrement FCM.
+      const connected = await auth.reload();
+
+      if (!connected) {
+        throw new Error(
+          "Compte créé, mais la connexion automatique a échoué. Connectez-vous avec votre nouveau compte.",
+        );
+      }
+
+      debugLog(
+        'INSCRIPTION',
+        'Connexion réussie ; activation FCM en cours',
+      );
+
+      // Le navigateur bascule automatiquement vers Menu.
+      // Le useEffect de App() appellera registerPushNotifications()
+      // avec le JWT du nouveau compte.
+      Alert.alert(
+        'Inscription réussie',
+        'Votre compte est créé et vous êtes connecté. Autorisez les notifications pour activer les alertes de commande.',
+      );
+    } catch (error) {
+      debugError('INSCRIPTION', error);
+    } finally {
+      setBusy(false);
+      debugLog('INSCRIPTION', 'Fin du chargement');
+    }
   }
-}
-
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Créer un compte</Text>
-        <Field label="Nom complet" value={name} onChangeText={setName}/>
-        <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none"/>
-        <Field label="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad"/>
-        <Field label="Mot de passe (10 caractères minimum)" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none"/>
-        <Button title={busy?'Création…':'Créer mon compte'} onPress={submit} disabled={busy}/>
+
+        <Field
+          label="Nom complet"
+          value={name}
+          onChangeText={setName}
+        />
+
+        <Field
+          label="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <Field
+          label="Téléphone"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+
+        <Field
+          label="Mot de passe (10 à 72 caractères)"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+
+        <Button
+          title={busy ? 'Création et connexion…' : 'Créer mon compte'}
+          onPress={submit}
+          disabled={busy}
+        />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 // --- ECRAN MENU AVEC LE NOUVEAU DESIGN ---
 function MenuScreen({navigation}) {

@@ -65,4 +65,35 @@ async function notifyOrderCustomer(order,event,message=null) {
  const [type,title,body]=templates[event](order,message);
  return sendNotificationToUser({userId:order.user_id,orderId:order.id,type,title,body,data:{type,orderId:order.id,orderNumber:order.order_number,status:event}});
 }
-module.exports={registerDevice,deactivateDevice,createNotification,sendNotificationToUser,notifyOrderCustomer};
+
+
+async function sendOrderReady(fcmToken, order) {
+  if (!order || !order.user_id) {
+    throw new Error('Commande sans user_id.');
+  }
+
+  // Les appareils actifs de user_devices sont la source principale.
+  return notifyOrderCustomer(order, 'ready');
+}
+
+async function sendRestaurantNewOrder(order) {
+  console.warn(
+    '[FCM] Notification restaurant non configurée :',
+    order?.order_number || order?.id,
+  );
+
+  return {
+    sent: 0,
+    reason: 'restaurant_recipient_not_configured',
+  };
+}
+
+module.exports = {
+  registerDevice,
+  deactivateDevice,
+  createNotification,
+  sendNotificationToUser,
+  notifyOrderCustomer,
+  sendOrderReady,
+  sendRestaurantNewOrder,
+};
