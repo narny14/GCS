@@ -325,6 +325,7 @@ function RegisterScreen({navigation}) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
 
+  
   async function submit() {
     if (busy) return;
 
@@ -355,23 +356,34 @@ function RegisterScreen({navigation}) {
 
     setBusy(true);
 
-    let registrationCompleted = false;
+    let etape = 'Initialisation';
+    let accountCreated = false;
+    let fcm = null;
 
     try {
+      // 1. Préparer les notifications sans bloquer la création du compte.
+      etape = 'Préparation du token FCM';
       setStatus('Préparation des notifications…');
 
-      /*
-       * La route serveur existante attend un objet fcm contenant
-       * token et installationId.
-       */
-      const fcm = await preparePushRegistration();
+      try {
+        const registration = await preparePushRegistration();
 
-      if (!fcm?.token || !fcm?.installationId) {
-        throw new Error(
-          'Le token FCM ou l’identifiant d’installation est absent.',
+        if (registration?.token && registration?.installationId) {
+          fcm = registration;
+          console.log('[FCM] Token obtenu pour cette installation.');
+        } else {
+          console.warn('[FCM] Token ou identifiant d’installation absent.');
+        }
+      } catch (fcmError) {
+        logError('PRÉPARATION FCM', fcmError);
+        console.warn(
+          '[FCM] Inscription poursuivie sans token :',
+          errorMessage(fcmError),
         );
       }
 
+      // 2. Créer le compte.
+      etape = 'Création du compte sur le serveur';
       setStatus('Création du compte…');
 
       const data = await api('/api/auth/register', {
@@ -387,65 +399,87 @@ function RegisterScreen({navigation}) {
 
       if (!data?.token || !data?.user) {
         throw new Error(
-          'Réponse serveur invalide : le token ou les informations utilisateur sont absents.',
+          data?.message ||
+            data?.error ||
+            'Réponse invalide : le serveur doit renvoyer token et user.',
         );
       }
 
-      registrationCompleted = true;
+      accountCreated = true;
 
-      setStatus('Ouverture de la session…');
+      // 3. Sauvegarder le jeton de session.
+      etape = 'Enregistrement de la session';
       await saveToken(data.token);
 
+      // 4. Vérifier la session avant de continuer.
+      etape = 'Vérification de la session';
       const connected = await auth.reload();
 
       if (!connected) {
-        Alert.alert(
-          'Compte créé',
-          'Le compte a été créé, mais la connexion automatique a échoué. Connectez-vous avec vos identifiants.',
-          [
-            {
-              text: 'Aller à la connexion',
-              onPress: async () => {
-                try {
-                  await clearToken();
-                } catch (error) {
-                  logError('SUPPRESSION DU JETON', error);
-                }
-
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [
-                      {
-                        name: 'Login',
-                        params: {email: cleanEmail},
-                      },
-                    ],
-                  }),
-                );
-              },
-            },
-          ],
+        throw new Error(
+          'Compte créé, mais session non validée. Vérifiez /api/auth/me.',
         );
-        return;
       }
 
-      Alert.alert(
-        'Bienvenue !',
-        'Votre compte a été créé avec succès.',
-      );
-    } catch (error) {
-      logError('INSCRIPTION', error);
+      // 5. Enregistrer explicitement le token FCM avec la session authentifiée.
+      if (fcm?.token && fcm?.installationId) {
+        etape = 'Enregistrement du token FCM dans la base de données';
+        setStatus('Enregistrement des notifications…');
 
-      if (registrationCompleted) {
+        try {
+          const fcmResult = await api('/api/auth/fcm-token', {
+            method: 'POST',
+            body: JSON.stringify(fcm),
+          });
+
+          if (fcmResult?.ok !== true) {
+            throw new Error(
+              fcmResult?.message ||
+                fcmResult?.error ||
+                'Le serveur n’a pas confirmé l’enregistrement du token FCM.',
+            );
+          }
+
+          console.log('[FCM] Token confirmé par le serveur.');
+          Alert.alert(
+            'Inscription réussie',
+            'Votre compte est créé et les notifications sont enregistrées.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Le navigateur de navigation affiche déjà le menu
+                  // si la session est validée.
+                },
+              },
+            ],
+          );
+        } catch (fcmSaveError) {
+          logError('ENREGISTREMENT FCM EN BASE', fcmSaveError);
+
+          Alert.alert(
+            'Compte créé',
+            'Votre compte est créé et connecté, mais le serveur n’a pas confirmé l’enregistrement du token FCM. Vérifiez la route /api/auth/fcm-token.',
+          );
+        }
+      } else {
         Alert.alert(
           'Compte créé',
-          'Le compte semble avoir été créé, mais la connexion automatique a échoué. Essayez de vous connecter avant de recommencer l’inscription.',
+          'Votre compte est créé et connecté. Aucun token FCM n’a été obtenu ; les notifications ne sont donc pas encore enregistrées.',
+        );
+      }
+    } catch (error) {
+      logError(`INSCRIPTION — ${etape}`, error);
+
+      if (accountCreated) {
+        Alert.alert(
+          'Compte créé',
+          `La création du compte a réussi, mais une étape suivante a échoué.\n\nÉtape : ${etape}\nErreur : ${errorMessage(error)}\n\nEssayez de vous reconnecter sans recréer le compte.`,
         );
       } else {
         Alert.alert(
           'Inscription impossible',
-          errorMessage(error),
+          `Étape : ${etape}\nErreur : ${errorMessage(error)}`,
         );
       }
     } finally {
@@ -453,6 +487,7 @@ function RegisterScreen({navigation}) {
       setStatus('');
     }
   }
+
 
   return (
     <SafeAreaView style={styles.screen}>
