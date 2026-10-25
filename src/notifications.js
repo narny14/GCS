@@ -1,3 +1,4 @@
+
 import {Platform, PermissionsAndroid} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
@@ -19,67 +20,118 @@ export async function getInstallationId() {
   return id;
 }
 
-// Demande la permission système Android 13+ uniquement.
 async function requestAndroidNotificationPermission() {
-  if (Platform.OS !== 'android') return true;
-  if (Number(Platform.Version) < 33) return true;
+  if (Platform.OS !== 'android' || Number(Platform.Version) < 33) {
+    return true;
+  }
 
   const result = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
   );
+
   return result === PermissionsAndroid.RESULTS.GRANTED;
 }
 
 export async function preparePushRegistration() {
-  // 1. Permission système Android 13+
-  const androidPermission = await requestAndroidNotificationPermission();
-  if (!androidPermission) {
+  const permitted = await requestAndroidNotificationPermission();
+
+  if (!permitted) {
     throw new Error('Permission de notification refusée sur Android.');
   }
 
-  // 2. Enregistrement du device auprès de Firebase (obligatoire sur iOS, recommandé partout)
   try {
     await messaging().registerDeviceForRemoteMessages();
-  } catch (e) {
-    console.warn('[FCM] registerDeviceForRemoteMessages:', e?.message);
+  } catch (error) {
+    console.warn(
+      '[FCM] Enregistrement du périphérique :',
+      error?.message,
+    );
   }
 
-  // 3. Permission Firebase (iOS principalement)
   try {
     const authorization = await messaging().requestPermission();
+
     const authorized =
       authorization === messaging.AuthorizationStatus.AUTHORIZED ||
       authorization === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (Platform.OS === 'ios' && !authorized) {
-      throw new Error('Autorisation des notifications Firebase refusée.');
+      throw new Error(
+        'Autorisation des notifications Firebase refusée.',
+      );
     }
-  } catch (e) {
-    if (Platform.OS === 'ios') throw e;
-    console.warn('[FCM] requestPermission:', e?.message);
+  } catch (error) {
+    if (Platform.OS === 'ios') {
+      throw error;
+    }
+
+    console.warn('[FCM] Permission Firebase :', error?.message);
   }
 
-  // 4. Récupération du token — plusieurs tentatives (APNs peut être lent sur iOS)
   let token = null;
-  for (let attempt = 0; attempt < 3 && !token; attempt++) {
+
+  for (let attempt = 0; attempt < 3 && !token; attempt += 1) {
     try {
       token = await messaging().getToken();
-    } catch (e) {
-      console.warn(`[FCM] getToken tentative ${attempt + 1}:`, e?.message);
-      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    } catch (error) {
+      console.warn(
+        `[FCM] Tentative ${attempt + 1} :`,
+        error?.message,
+      );
+
+      if (attempt < 2) {
+        await new Promise(resolve =>
+          setTimeout(resolve, 1000 * (attempt + 1)),
+        );
+      }
     }
   }
 
   if (typeof token !== 'string' || token.trim().length < 20) {
-    throw new Error('Firebase n’a pas fourni de token FCM valide.');
+    throw new Error(
+      'Firebase n’a pas fourni de token FCM valide.',
+    );
   }
-
-  const installationId = await getInstallationId();
 
   return {
     token: token.trim(),
-    installationId,
+    installationId: await getInstallationId(),
     platform: Platform.OS,
     deviceLabel: `${Platform.OS} FastFood One`,
   };
+}
+
+// Enregistre le token FCM sur le serveur après la connexion.
+export async function registerPushNotifications() {
+  const registration = await preparePushRegistration();
+
+  const response = await api('/api/auth/fcm-token', {
+    method: 'POST',
+    body: JSON.stringify(registration),
+  });
+
+  if (response?.ok !== true) {
+    throw new Error(
+      response?.message ||
+        response?.error ||
+        'Le serveur n’a pas confirmé l’enregistrement FCM.',
+    );
+  }
+
+  console.log('[FCM] Appareil enregistré en base.');
+
+  return registration;
+}
+
+// Écoute les notifications lorsque l'application est ouverte.
+export function listenForPush(onMessage) {
+  if (typeof onMessage !== 'function') {
+    throw new Error(
+      'Un callback est nécessaire pour écouter les notifications.',
+    );
+  }
+
+  return messaging().onMessage(async remoteMessage => {
+    onMessage(remoteMessage);
+  });
 }
