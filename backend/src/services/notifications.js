@@ -18,13 +18,50 @@ function getMessaging() {
 }
 const hash = token => crypto.createHash('sha256').update(token).digest('hex');
 const toStringData = obj => Object.fromEntries(Object.entries(obj || {}).filter(([,v]) => v != null).map(([k,v]) => [k,String(v)]));
-async function registerDevice({userId, installationId, token, platform='unknown', deviceLabel=null}) {
- if (!userId || !installationId || !token) throw new Error('userId, installationId et token sont obligatoires.');
- if (!['android','ios','web','unknown'].includes(platform)) platform='unknown';
- await db.execute('UPDATE user_devices SET is_active=0 WHERE fcm_token=? AND NOT (user_id=? AND installation_id=?)',[token,userId,installationId]);
- await db.execute(`INSERT INTO user_devices (user_id,installation_id,fcm_token,platform,device_label,is_active,last_seen_at)
- VALUES (?,?,?,?,?,1,NOW()) ON DUPLICATE KEY UPDATE fcm_token=VALUES(fcm_token),platform=VALUES(platform),device_label=VALUES(device_label),is_active=1,last_seen_at=NOW()`,[userId,installationId,token,platform,deviceLabel]);
- return {ok:true};
+async function registerDevice({
+  userId,
+  installationId,
+  token,
+  platform,
+  deviceLabel,
+}) {
+  if (!userId || !installationId || !token) {
+    throw new Error('userId, installationId et token sont obligatoires.');
+  }
+
+  const [result] = await db.execute(
+    `INSERT INTO user_devices
+      (user_id, installation_id, fcm_token, platform,
+       device_label, is_active, last_seen_at)
+     VALUES (?, ?, ?, ?, ?, 1, NOW())
+     ON DUPLICATE KEY UPDATE
+       fcm_token = VALUES(fcm_token),
+       platform = VALUES(platform),
+       device_label = VALUES(device_label),
+       is_active = 1,
+       last_seen_at = NOW()`,
+    [
+      userId,
+      installationId,
+      token,
+      platform || 'android',
+      deviceLabel || null,
+    ]
+  );
+
+  const [rows] = await db.execute(
+    `SELECT id
+     FROM user_devices
+     WHERE user_id = ? AND installation_id = ?
+     LIMIT 1`,
+    [userId, installationId]
+  );
+
+  if (!rows.length) {
+    throw new Error("L'appareil FCM n'a pas été enregistré en base.");
+  }
+
+  return { ok: true, deviceId: rows[0].id };
 }
 async function deactivateDevice({userId,installationId}) { await db.execute('UPDATE user_devices SET is_active=0 WHERE user_id=? AND installation_id=?',[userId,installationId]); return {ok:true}; }
 async function createNotification({userId=null,orderId=null,recipientType='customer',type,title,body,data={}}) {
