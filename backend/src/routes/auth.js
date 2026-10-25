@@ -163,42 +163,57 @@ router.post('/register', async (req, res, next) => {
 
     // Enregistrer l'appareil uniquement si un token valide est fourni.
     if (hasFcmToken && installationId) {
-      const safePlatform = ['android', 'ios', 'web', 'unknown'].includes(
-        platform,
-      )
-        ? platform
-        : 'unknown';
+  const safePlatform = ['android', 'ios', 'web', 'unknown'].includes(
+    platform,
+  )
+    ? platform
+    : 'unknown';
 
-      await connection.execute(
-        `UPDATE user_devices
-         SET is_active = 0
-         WHERE fcm_token = ?
-           AND NOT (user_id = ? AND installation_id = ?)`,
-        [fcmToken, user.id, installationId],
-      );
+  await connection.execute(
+    `UPDATE user_devices
+     SET is_active = 0
+     WHERE fcm_token = ?
+       AND NOT (user_id = ? AND installation_id = ?)`,
+    [fcmToken, user.id, installationId],
+  );
 
-      await connection.execute(
-        `INSERT INTO user_devices
-         (user_id, installation_id, fcm_token, platform,
-          device_label, is_active, last_seen_at)
-         VALUES (?, ?, ?, ?, ?, 1, NOW())
-         ON DUPLICATE KEY UPDATE
-           fcm_token = VALUES(fcm_token),
-           platform = VALUES(platform),
-           device_label = VALUES(device_label),
-           is_active = 1,
-           last_seen_at = NOW()`,
-        [
-          user.id,
-          installationId,
-          fcmToken,
-          safePlatform,
-          deviceLabel,
-        ],
-      );
+  await connection.execute(
+    `INSERT INTO user_devices
+     (user_id, installation_id, fcm_token, platform,
+      device_label, is_active, last_seen_at)
+     VALUES (?, ?, ?, ?, ?, 1, NOW())
+     ON DUPLICATE KEY UPDATE
+       fcm_token = VALUES(fcm_token),
+       platform = VALUES(platform),
+       device_label = VALUES(device_label),
+       is_active = 1,
+       last_seen_at = NOW()`,
+    [
+      user.id,
+      installationId,
+      fcmToken,
+      safePlatform,
+      deviceLabel,
+    ],
+  );
 
-      fcmRegistered = true;
-    }
+  const [deviceRows] = await connection.execute(
+    `SELECT id
+     FROM user_devices
+     WHERE user_id = ?
+       AND installation_id = ?
+       AND fcm_token = ?
+       AND is_active = 1
+     LIMIT 1`,
+    [user.id, installationId, fcmToken],
+  );
+
+  if (deviceRows.length !== 1) {
+    throw new Error('Échec de vérification de user_devices.');
+  }
+
+  fcmRegistered = true;
+}
 
     // Compte et éventuel appareil sont validés ensemble.
     await connection.commit();
