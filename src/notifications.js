@@ -5,62 +5,81 @@ import {api} from './api';
 
 const INSTALLATION_KEY = '@fastfood_one_installation_id';
 
-async function getInstallationId() {
+export async function getInstallationId() {
   let id = await AsyncStorage.getItem(INSTALLATION_KEY);
+
   if (!id) {
-    id = `android-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+    id = `${Platform.OS}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 14)}`;
+
     await AsyncStorage.setItem(INSTALLATION_KEY, id);
   }
+
   return id;
 }
 
-// Obtient le token sans faire d'appel API. Il sera envoyé avec l'inscription.
+// Demande la permission système Android 13+ uniquement.
+async function requestAndroidNotificationPermission() {
+  if (Platform.OS !== 'android') return true;
+  if (Number(Platform.Version) < 33) return true;
+
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  );
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+}
+
 export async function preparePushRegistration() {
-  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-    const permission = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
-    if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
-      throw new Error('Permission de notification refusée. Autorisez les notifications puis réessayez.');
+  // 1. Permission système Android 13+
+  const androidPermission = await requestAndroidNotificationPermission();
+  if (!androidPermission) {
+    throw new Error('Permission de notification refusée sur Android.');
+  }
+
+  // 2. Enregistrement du device auprès de Firebase (obligatoire sur iOS, recommandé partout)
+  try {
+    await messaging().registerDeviceForRemoteMessages();
+  } catch (e) {
+    console.warn('[FCM] registerDeviceForRemoteMessages:', e?.message);
+  }
+
+  // 3. Permission Firebase (iOS principalement)
+  try {
+    const authorization = await messaging().requestPermission();
+    const authorized =
+      authorization === messaging.AuthorizationStatus.AUTHORIZED ||
+      authorization === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (Platform.OS === 'ios' && !authorized) {
+      throw new Error('Autorisation des notifications Firebase refusée.');
+    }
+  } catch (e) {
+    if (Platform.OS === 'ios') throw e;
+    console.warn('[FCM] requestPermission:', e?.message);
+  }
+
+  // 4. Récupération du token — plusieurs tentatives (APNs peut être lent sur iOS)
+  let token = null;
+  for (let attempt = 0; attempt < 3 && !token; attempt++) {
+    try {
+      token = await messaging().getToken();
+    } catch (e) {
+      console.warn(`[FCM] getToken tentative ${attempt + 1}:`, e?.message);
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
 
-  const token = await messaging().getToken();
-  if (!token) throw new Error('Aucun token FCM reçu.');
+  if (typeof token !== 'string' || token.trim().length < 20) {
+    throw new Error('Firebase n’a pas fourni de token FCM valide.');
+  }
+
+  const installationId = await getInstallationId();
 
   return {
-    token,
-    installationId: await getInstallationId(),
+    token: token.trim(),
+    installationId,
     platform: Platform.OS,
     deviceLabel: `${Platform.OS} FastFood One`,
-  };
-}
-
-// Utilisée lors des connexions ultérieures pour actualiser le token d'un appareil.
-export async function registerPushNotifications() {
-  try {
-    const fcm = await preparePushRegistration();
-    const result = await api('/api/auth/fcm-token', {
-      method: 'POST',
-      body: JSON.stringify(fcm),
-    });
-    if (!result?.ok) throw new Error('Le serveur n’a pas confirmé l’enregistrement.');
-    console.log('[FCM] Appareil enregistré dans user_devices.');
-    return fcm.token;
-  } catch (error) {
-    console.warn('[FCM] Échec de l’enregistrement :', error?.message || error);
-    return null;
-  }
-}
-
-export function listenForPush(onNotification) {
-  const unsubscribeForeground = messaging().onMessage(async message => onNotification?.(message));
-  const unsubscribeOpened = messaging().onNotificationOpenedApp(message => onNotification?.(message));
-  messaging().getInitialNotification().then(message => {
-    if (message) onNotification?.(message);
-  }).catch(error => console.warn('[FCM] Notification initiale :', error?.message));
-  return () => {
-    unsubscribeForeground();
-    unsubscribeOpened();
   };
 }

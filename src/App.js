@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Platform, // ✅ ajouté
 } from 'react-native';
 
 import {
@@ -29,6 +30,9 @@ import {
 } from '@react-navigation/native';
 
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+
+// ✅ ajouté
+import messaging from '@react-native-firebase/messaging';
 
 import {
   api,
@@ -41,6 +45,7 @@ import {
   preparePushRegistration,
   registerPushNotifications,
   listenForPush,
+  getInstallationId, // ✅ ajouté (à exporter depuis notifications.js)
 } from './notifications';
 
 const Stack = createNativeStackNavigator();
@@ -380,6 +385,10 @@ function RegisterScreen({navigation}) {
           '[FCM] Inscription poursuivie sans token :',
           errorMessage(fcmError),
         );
+        Alert.alert(
+    'Notifications non activées',
+    `Le compte sera créé, mais les notifications ne seront pas enregistrées.\n\n${errorMessage(fcmError)}`,
+  );
       }
 
       // 2. Créer le compte.
@@ -1730,11 +1739,12 @@ export default function App() {
     });
   }, [reload]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!loggedIn) return undefined;
 
     let mounted = true;
     let unsubscribe = null;
+    let unsubscribeTokenRefresh = null;
 
     async function setupNotifications() {
       try {
@@ -1745,6 +1755,38 @@ export default function App() {
         await registerPushNotifications();
 
         if (!mounted) return;
+
+        // ✅ Écoute du rafraîchissement automatique du token FCM.
+        unsubscribeTokenRefresh = messaging().onTokenRefresh(
+          async newToken => {
+            try {
+              const installationId = await getInstallationId();
+
+              const result = await api('/api/auth/fcm-token', {
+                method: 'POST',
+                body: JSON.stringify({
+                  token: newToken,
+                  installationId,
+                  platform: Platform.OS,
+                  deviceLabel: `${Platform.OS} FastFood One`,
+                }),
+              });
+
+              if (result?.ok !== true) {
+                console.warn(
+                  '[FCM] Le serveur n’a pas confirmé le rafraîchissement du token.',
+                );
+              } else {
+                console.log('[FCM] Token rafraîchi et enregistré.');
+              }
+            } catch (e) {
+              console.warn(
+                '[FCM] Rafraîchissement token:',
+                e?.message || e,
+              );
+            }
+          },
+        );
 
         const stop = listenForPush(message => {
           const title =
@@ -1776,6 +1818,15 @@ export default function App() {
           unsubscribe();
         } catch (error) {
           logError('ARRÊT NOTIFICATIONS', error);
+        }
+      }
+
+      // ✅ Nettoyage de l'écoute du refresh token.
+      if (typeof unsubscribeTokenRefresh === 'function') {
+        try {
+          unsubscribeTokenRefresh();
+        } catch (error) {
+          logError('ARRÊT RAFRAÎCHISSEMENT TOKEN', error);
         }
       }
     };
