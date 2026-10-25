@@ -53,88 +53,184 @@ router.delete('/fcm-token', authenticate, async (req, res, next) => {
 });
 
 // Inscription : compte + token FCM dans la même requête et transaction SQL.
+
 router.post('/register', async (req, res, next) => {
   let connection;
+
   try {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
     const phone = String(req.body.phone || '').trim();
     const password = String(req.body.password || '');
-    const fcm = req.body.fcm || {};
+
+    const fcm =
+      req.body.fcm && typeof req.body.fcm === 'object'
+        ? req.body.fcm
+        : {};
+
     const fcmToken = String(fcm.token || '').trim();
     const installationId = String(fcm.installationId || '').trim();
     const platform = String(fcm.platform || 'unknown').trim();
-    const deviceLabel = String(fcm.deviceLabel || '').trim().slice(0, 160) || null;
+    const deviceLabel =
+      String(fcm.deviceLabel || '').trim().slice(0, 160) || null;
 
-    if (name.length < 2 || name.length > 120) return res.status(400).json({error: 'Nom invalide.'});
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 190) {
-      return res.status(400).json({error: 'Adresse e-mail invalide.'});
+    // Validation des informations du compte.
+    if (name.length < 2 || name.length > 120) {
+      return res.status(400).json({ error: 'Nom invalide.' });
     }
-    if (phone.length < 6 || phone.length > 40) return res.status(400).json({error: 'Téléphone invalide.'});
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      email.length > 190
+    ) {
+      return res.status(400).json({
+        error: 'Adresse e-mail invalide.',
+      });
+    }
+
+    if (phone.length < 6 || phone.length > 40) {
+      return res.status(400).json({ error: 'Téléphone invalide.' });
+    }
+
     if (password.length < 10 || password.length > 72) {
-      return res.status(400).json({error: 'Le mot de passe doit contenir 10 à 72 caractères.'});
+      return res.status(400).json({
+        error: 'Le mot de passe doit contenir 10 à 72 caractères.',
+      });
     }
-    if (!fcmToken || fcmToken.length > 4096) {
-      return res.status(400).json({error: 'Token FCM absent ou invalide. Autorisez les notifications puis réessayez.'});
+
+    // FCM est facultatif à l'inscription.
+    // Si un token est fourni, ses informations doivent être valides.
+    const hasFcmToken = fcmToken.length > 0;
+
+    if (hasFcmToken && fcmToken.length > 4096) {
+      return res.status(400).json({
+        error: 'Token FCM invalide.',
+      });
     }
-    if (!installationId || installationId.length > 128) {
-      return res.status(400).json({error: 'Identifiant d’installation absent ou invalide.'});
+
+    if (
+      hasFcmToken &&
+      (!installationId || installationId.length > 128)
+    ) {
+      return res.status(400).json({
+        error: 'Identifiant d’installation absent ou invalide.',
+      });
+    }
+
+    if (
+      hasFcmToken &&
+      !['android', 'ios', 'web', 'unknown'].includes(platform)
+    ) {
+      return res.status(400).json({
+        error: 'Plateforme de notification invalide.',
+      });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+
     connection = await db.getConnection();
     await connection.beginTransaction();
 
     const [existing] = await connection.execute(
-      'SELECT id FROM users WHERE email = ? LIMIT 1', [email]
+      'SELECT id FROM users WHERE email = ? LIMIT 1',
+      [email],
     );
+
     if (existing.length) {
       await connection.rollback();
-      return res.status(409).json({error: 'Cette adresse e-mail est déjà utilisée.'});
+
+      return res.status(409).json({
+        error: 'Cette adresse e-mail est déjà utilisée.',
+      });
     }
 
+    // Créer le compte.
     const [created] = await connection.execute(
       `INSERT INTO users (name, email, phone, password_hash, role)
        VALUES (?, ?, ?, ?, ?)`,
-      [name, email, phone, passwordHash, 'customer']
+      [name, email, phone, passwordHash, 'customer'],
     );
 
-    const user = {id: created.insertId, name, email, phone, role: 'customer'};
-    const safePlatform = ['android', 'ios', 'web', 'unknown'].includes(platform) ? platform : 'unknown';
+    const user = {
+      id: created.insertId,
+      name,
+      email,
+      phone,
+      role: 'customer',
+    };
 
-    await connection.execute(
-      `UPDATE user_devices
-       SET is_active = 0
-       WHERE fcm_token = ?
-         AND NOT (user_id = ? AND installation_id = ?)`,
-      [fcmToken, user.id, installationId]
-    );
+    let fcmRegistered = false;
 
-    await connection.execute(
-      `INSERT INTO user_devices
-       (user_id, installation_id, fcm_token, platform, device_label, is_active, last_seen_at)
-       VALUES (?, ?, ?, ?, ?, 1, NOW())
-       ON DUPLICATE KEY UPDATE
-         fcm_token = VALUES(fcm_token),
-         platform = VALUES(platform),
-         device_label = VALUES(device_label),
-         is_active = 1,
-         last_seen_at = NOW()`,
-      [user.id, installationId, fcmToken, safePlatform, deviceLabel]
-    );
+    // Enregistrer l'appareil uniquement si un token valide est fourni.
+    if (hasFcmToken && installationId) {
+      const safePlatform = ['android', 'ios', 'web', 'unknown'].includes(
+        platform,
+      )
+        ? platform
+        : 'unknown';
 
+      await connection.execute(
+        `UPDATE user_devices
+         SET is_active = 0
+         WHERE fcm_token = ?
+           AND NOT (user_id = ? AND installation_id = ?)`,
+        [fcmToken, user.id, installationId],
+      );
+
+      await connection.execute(
+        `INSERT INTO user_devices
+         (user_id, installation_id, fcm_token, platform,
+          device_label, is_active, last_seen_at)
+         VALUES (?, ?, ?, ?, ?, 1, NOW())
+         ON DUPLICATE KEY UPDATE
+           fcm_token = VALUES(fcm_token),
+           platform = VALUES(platform),
+           device_label = VALUES(device_label),
+           is_active = 1,
+           last_seen_at = NOW()`,
+        [
+          user.id,
+          installationId,
+          fcmToken,
+          safePlatform,
+          deviceLabel,
+        ],
+      );
+
+      fcmRegistered = true;
+    }
+
+    // Compte et éventuel appareil sont validés ensemble.
     await connection.commit();
-    return res.status(201).json({token: makeToken(user), user, fcmRegistered: true});
+
+    return res.status(201).json({
+      token: makeToken(user),
+      user,
+      fcmRegistered,
+      message: fcmRegistered
+        ? 'Compte créé et appareil enregistré.'
+        : 'Compte créé. Enregistrement des notifications à effectuer ultérieurement.',
+    });
   } catch (error) {
     if (connection) {
-      try { await connection.rollback(); } catch (_) {}
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error('[AUTH REGISTER] Échec du rollback:', rollbackError);
+      }
     }
+
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({error: 'Cette adresse e-mail est déjà utilisée.'});
+      return res.status(409).json({
+        error: 'Cette adresse e-mail est déjà utilisée.',
+      });
     }
+
     next(error);
   } finally {
-    if (connection) connection.release();
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
