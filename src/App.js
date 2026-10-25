@@ -386,16 +386,28 @@ function RegisterScreen({navigation}) {
       etape = 'Création du compte sur le serveur';
       setStatus('Création du compte…');
 
-      const data = await api('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: cleanName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          password,
-          fcm,
-        }),
-      });
+      const registrationPayload = {
+  name: cleanName,
+  email: cleanEmail,
+  phone: cleanPhone,
+  password,
+};
+
+// N'envoyer FCM que si le token est réellement disponible.
+if (
+  fcm &&
+  typeof fcm.token === 'string' &&
+  fcm.token.trim().length > 0 &&
+  typeof fcm.installationId === 'string' &&
+  fcm.installationId.trim().length > 0
+) {
+  registrationPayload.fcm = fcm;
+}
+
+const data = await api('/api/auth/register', {
+  method: 'POST',
+  body: JSON.stringify(registrationPayload),
+});
 
       if (!data?.token || !data?.user) {
         throw new Error(
