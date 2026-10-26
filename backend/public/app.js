@@ -16,6 +16,7 @@ const statusLabels = {
 };
 
 
+
 const nextActions = {
   pending: [
     { status: 'accepted', label: 'Accepter' },
@@ -27,13 +28,16 @@ const nextActions = {
   ],
   preparing: [
     { status: 'ready', label: 'Commande prête' },
+    { status: 'cancelled', label: 'Annuler la commande' },
   ],
   ready: [
     { status: 'picked_up', label: 'Marquer récupérée / payée' },
+    { status: 'cancelled', label: 'Annuler la commande' },
   ],
   picked_up: [],
   cancelled: [],
 };
+
 
 
 

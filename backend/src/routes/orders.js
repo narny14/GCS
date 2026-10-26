@@ -9,14 +9,16 @@ const {
 } = require('../services/notifications');
 
 const router = express.Router();
+
 const transitions = {
   pending: new Set(['accepted', 'cancelled']),
   accepted: new Set(['preparing', 'cancelled']),
-  preparing: new Set(['ready']),
-  ready: new Set(['picked_up']),
+  preparing: new Set(['ready', 'cancelled']),
+  ready: new Set(['picked_up', 'cancelled']),
   picked_up: new Set(),
-  cancelled: new Set()
+  cancelled: new Set(),
 };
+
 
 router.post('/', authenticate, async (req, res, next) => {
   const conn = await db.getConnection();
