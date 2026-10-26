@@ -397,4 +397,28 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
+router.post('/test-fcm', authenticate, async (req, res, next) => {
+  try {
+    const { sendNotificationToUser } = require('../services/notifications');
+
+    const result = await sendNotificationToUser({
+      userId: req.user.id,
+      type: 'fcm_test',
+      title: 'FastFood One',
+      body: 'Test réussi : les notifications FastFood One fonctionnent.',
+      data: { type: 'fcm_test' },
+    });
+
+    return res.status(result.sent > 0 ? 200 : 503).json({
+      ok: result.sent > 0,
+      message: result.sent > 0
+        ? 'Notification envoyée à Firebase.'
+        : 'Échec de l’envoi FCM.',
+      result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
