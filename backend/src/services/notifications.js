@@ -5,72 +5,76 @@ const path = require('path');
 const db = require('../config/db');
 let messaging = null, initialized = false;
 
+
 function getMessaging() {
   if (initialized) return messaging;
 
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 
   if (!keyPath || !keyPath.trim()) {
-    console.error('[FCM DIAG] Variable FIREBASE_SERVICE_ACCOUNT_PATH absente.');
+    console.error(
+      '[FCM DIAG] Variable FIREBASE_SERVICE_ACCOUNT_PATH absente.'
+    );
     return null;
   }
 
   const resolvedPath = path.resolve(keyPath.trim());
 
   if (!fs.existsSync(resolvedPath)) {
-    console.error('[FCM DIAG] Fichier JSON introuvable au chemin configuré.');
-    console.error('[FCM DIAG] Chemin absolu résolu :', resolvedPath);
+    console.error(
+      '[FCM DIAG] Fichier JSON introuvable au chemin configuré.'
+    );
+    console.error('[FCM DIAG] Chemin résolu :', resolvedPath);
     return null;
   }
 
   try {
-    const admin = require('firebase-admin');
+    const { initializeApp, getApps, cert } =
+      require('firebase-admin/app');
+
+    const { getMessaging } =
+      require('firebase-admin/messaging');
 
     const raw = fs.readFileSync(resolvedPath, 'utf8');
     const serviceAccount = JSON.parse(raw);
 
-    console.log('[FCM DIAG] Fichier JSON lisible : oui');
-    console.log(
-      '[FCM DIAG] Project ID présent :',
-      Boolean(serviceAccount.project_id)
-    );
-    console.log(
-      '[FCM DIAG] Client email présent :',
-      Boolean(serviceAccount.client_email)
-    );
-    console.log(
-      '[FCM DIAG] Clé privée présente :',
-      Boolean(serviceAccount.private_key)
-    );
-    console.log(
-      '[FCM DIAG] Project ID correspond à la variable :',
-      serviceAccount.project_id === process.env.FIREBASE_PROJECT_ID
-    );
+    if (
+      !serviceAccount.project_id ||
+      !serviceAccount.client_email ||
+      !serviceAccount.private_key
+    ) {
+      throw new Error(
+        'Le JSON Firebase ne contient pas tous les champs obligatoires.'
+      );
+    }
 
-    console.log('[FCM DIAG] Étape A : module Firebase Admin chargé');
-console.log('[FCM DIAG] admin.apps disponible :', Array.isArray(admin.apps));
-console.log('[FCM DIAG] Nombre d’applications :',
-  Array.isArray(admin.apps) ? admin.apps.length : 'indisponible');
-console.log('[FCM DIAG] credential.cert disponible :',
-  typeof admin.credential?.cert);
+    if (
+      process.env.FIREBASE_PROJECT_ID &&
+      serviceAccount.project_id !== process.env.FIREBASE_PROJECT_ID
+    ) {
+      throw new Error(
+        'Le project_id du JSON ne correspond pas à FIREBASE_PROJECT_ID.'
+      );
+    }
 
-const app =
-  admin.apps.length > 0
-    ? admin.app()
-    : admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
+    console.log('[FCM DIAG] Fichier JSON valide.');
+    console.log('[FCM DIAG] Project ID vérifié.');
 
-console.log('[FCM DIAG] Étape B : application Firebase créée');
+    const app =
+      getApps().length > 0
+        ? getApps()[0]
+        : initializeApp({
+            credential: cert(serviceAccount),
+            projectId: serviceAccount.project_id,
+          });
 
-messaging = admin.messaging(app);
-
-console.log('[FCM DIAG] Étape C : service Messaging obtenu');
-
-    messaging = admin.messaging(app);
+    messaging = getMessaging(app);
     initialized = true;
 
-    console.log('[FCM DIAG] Initialisation Firebase Admin réussie.');
+    console.log(
+      '[FCM DIAG] Initialisation Firebase Admin réussie.'
+    );
+
     return messaging;
   } catch (error) {
     console.error(
@@ -78,9 +82,11 @@ console.log('[FCM DIAG] Étape C : service Messaging obtenu');
       error.code || error.name || 'ERREUR_INCONNUE',
       error.message
     );
+
     return null;
   }
 }
+
 
 const hash = token => crypto.createHash('sha256').update(token).digest('hex');
 const toStringData = obj => Object.fromEntries(Object.entries(obj || {}).filter(([,v]) => v != null).map(([k,v]) => [k,String(v)]));
