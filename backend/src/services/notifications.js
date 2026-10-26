@@ -47,12 +47,25 @@ function getMessaging() {
       serviceAccount.project_id === process.env.FIREBASE_PROJECT_ID
     );
 
-    const app =
-      admin.apps.length > 0
-        ? admin.app()
-        : admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-          });
+    console.log('[FCM DIAG] Étape A : module Firebase Admin chargé');
+console.log('[FCM DIAG] admin.apps disponible :', Array.isArray(admin.apps));
+console.log('[FCM DIAG] Nombre d’applications :',
+  Array.isArray(admin.apps) ? admin.apps.length : 'indisponible');
+console.log('[FCM DIAG] credential.cert disponible :',
+  typeof admin.credential?.cert);
+
+const app =
+  admin.apps.length > 0
+    ? admin.app()
+    : admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+
+console.log('[FCM DIAG] Étape B : application Firebase créée');
+
+messaging = admin.messaging(app);
+
+console.log('[FCM DIAG] Étape C : service Messaging obtenu');
 
     messaging = admin.messaging(app);
     initialized = true;
