@@ -3,7 +3,10 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
-const { sendRestaurantNewOrder, sendOrderReady } = require('../services/notifications');
+const {
+  sendRestaurantNewOrder,
+  notifyOrderCustomer,
+} = require('../services/notifications');
 
 const router = express.Router();
 const transitions = {
@@ -220,10 +223,64 @@ router.patch('/:id/status', authenticate, requireAdmin, async (req, res, next) =
     if (!transitions[order.status].has(nextStatus)) {
       return res.status(409).json({ error: `Transition interdite : ${order.status} -> ${nextStatus}.` });
     }
-    const extras = nextStatus === 'ready' ? ', ready_at = NOW()' : nextStatus === 'picked_up' ? ', picked_up_at = NOW(), payment_status = "paid"' : '';
-    await db.execute(`UPDATE orders SET status = ?${extras} WHERE id = ? AND status = ?`, [nextStatus, order.id, order.status]);
-    if (nextStatus === 'ready') sendOrderReady(order.fcm_token, order).catch(() => {});
-    res.json({ ok: true, order_id: order.id, status: nextStatus });
+    
+const extras =
+  nextStatus === 'ready'
+    ? ', ready_at = NOW()'
+    : nextStatus === 'picked_up'
+      ? ', picked_up_at = NOW(), payment_status = "paid"'
+      : '';
+
+const [updateResult] = await db.execute(
+  `UPDATE orders
+   SET status = ?${extras}
+   WHERE id = ? AND status = ?`,
+  [nextStatus, order.id, order.status]
+);
+
+if (updateResult.affectedRows !== 1) {
+  return res.status(409).json({
+    error: 'La commande a été modifiée. Rechargez la liste.',
+  });
+}
+
+// Notifications destinées au client de l'application Android.
+const notificationEvents = [
+  'accepted',
+  'preparing',
+  'ready',
+  'cancelled',
+];
+
+if (notificationEvents.includes(nextStatus)) {
+  notifyOrderCustomer(order, nextStatus)
+    .then(result => {
+      console.log('[FCM ADMIN] Résultat :', {
+        orderId: order.id,
+        status: nextStatus,
+        sent: result.sent,
+        failed: result.failed,
+        reason: result.reason || null,
+      });
+    })
+    .catch(error => {
+      console.error(
+        '[FCM ADMIN] Échec de notification :',
+        order.id,
+        error.message
+      );
+    });
+}
+
+return res.json({
+  ok: true,
+  order_id: order.id,
+  status: nextStatus,
+  notification: notificationEvents.includes(nextStatus)
+    ? 'queued'
+    : 'not_applicable',
+});
+
   } catch (err) { next(err); }
 });
 
