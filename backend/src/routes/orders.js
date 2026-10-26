@@ -249,6 +249,7 @@ const notificationEvents = [
   'accepted',
   'preparing',
   'ready',
+  'picked_up',
   'cancelled',
 ];
 

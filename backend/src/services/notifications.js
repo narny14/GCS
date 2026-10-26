@@ -166,6 +166,11 @@ const templates={
  accepted:o=>['order_accepted','Commande acceptée',`Le restaurant a accepté la commande ${o.order_number}.`],
  preparing:o=>['order_preparing','Préparation en cours',`Votre commande ${o.order_number} est en préparation.`],
  ready:o=>['order_ready','Votre repas est prêt !',`La commande ${o.order_number} vous attend au restaurant.`],
+ picked_up: o => [
+  'order_picked_up',
+  'Commande récupérée',
+  `La commande ${o.order_number} a été récupérée. Merci !`,
+],
  unavailable:(o,m)=>['order_unavailable','Article indisponible',m||`Un article de la commande ${o.order_number} est indisponible. Contactez le restaurant.`],
  cancelled:(o,m)=>['order_cancelled','Commande annulée',m||`La commande ${o.order_number} a été annulée.`]
 };

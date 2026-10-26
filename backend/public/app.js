@@ -14,13 +14,28 @@ const statusLabels = {
   pending: 'Nouvelle', accepted: 'Acceptée', preparing: 'En préparation',
   ready: 'Prête au retrait', picked_up: 'Récupérée', cancelled: 'Annulée'
 };
+
+
 const nextActions = {
-  pending: [{status:'accepted',label:'Accepter'}],
-  accepted: [{status:'preparing',label:'Démarrer préparation'}],
-  preparing: [{status:'ready',label:'Commande prête'}],
-  ready: [{status:'picked_up',label:'Marquer récupérée / payée'}],
-  picked_up: [], cancelled: []
+  pending: [
+    { status: 'accepted', label: 'Accepter' },
+    { status: 'cancelled', label: 'Annuler la commande' },
+  ],
+  accepted: [
+    { status: 'preparing', label: 'Démarrer préparation' },
+    { status: 'cancelled', label: 'Annuler la commande' },
+  ],
+  preparing: [
+    { status: 'ready', label: 'Commande prête' },
+  ],
+  ready: [
+    { status: 'picked_up', label: 'Marquer récupérée / payée' },
+  ],
+  picked_up: [],
+  cancelled: [],
 };
+
+
 
 function money(value) {
   return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'GBP'}).format(Number(value || 0));
@@ -69,7 +84,6 @@ function showLoggedOut() {
 function showError(err) {
   $('global-error').textContent = `${err.message || String(err)}${err.url ? ` — ${err.url}` : ''}`;
 }
-
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -106,12 +120,33 @@ $('login-form').addEventListener('submit', async event => {
 $('logout').addEventListener('click', () => { token = ''; knownOrderIds.clear(); showLoggedOut(); });
 $('refresh').addEventListener('click', () => loadOrders().catch(showError));
 
+
+
 async function updateStatus(id, status) {
+  if (status === 'cancelled') {
+    const confirmed = window.confirm(
+      'Voulez-vous vraiment annuler cette commande ? Cette action est définitive.'
+    );
+    if (!confirmed) return;
+  }
+
   try {
-    await api(`/api/orders/${encodeURIComponent(id)}/status`, {method:'PATCH', body:JSON.stringify({status})});
+    await api(`/api/orders/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+
     await loadOrders();
-  } catch (err) { showError(err); }
+
+    if (status === 'cancelled') {
+      alert('Commande annulée.');
+    }
+  } catch (err) {
+    showError(err);
+  }
 }
+
+
 function orderCard(order) {
   const items = (order.items || []).map(i => `<li>${escapeHtml(i.quantity)} × ${escapeHtml(i.product_name)} — ${money(i.line_total)}</li>`).join('');
   const actions = (nextActions[order.status] || []).map(a => `<button data-id="${escapeHtml(order.id)}" data-status="${escapeHtml(a.status)}">${escapeHtml(a.label)}</button>`).join('');
