@@ -17,6 +17,7 @@ const statusLabels = {
 
 
 
+
 const nextActions = {
   pending: [
     { status: 'accepted', label: 'Accepter' },
@@ -37,6 +38,7 @@ const nextActions = {
   picked_up: [],
   cancelled: [],
 };
+
 
 
 
@@ -126,10 +128,11 @@ $('refresh').addEventListener('click', () => loadOrders().catch(showError));
 
 
 
+
 async function updateStatus(id, status) {
   if (status === 'cancelled') {
     const confirmed = window.confirm(
-      'Voulez-vous vraiment annuler cette commande ? Cette action est définitive.'
+      'Voulez-vous vraiment annuler cette commande ?'
     );
     if (!confirmed) return;
   }
@@ -149,6 +152,7 @@ async function updateStatus(id, status) {
     showError(err);
   }
 }
+
 
 
 function orderCard(order) {

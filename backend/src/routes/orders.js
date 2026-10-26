@@ -10,6 +10,7 @@ const {
 
 const router = express.Router();
 
+
 const transitions = {
   pending: new Set(['accepted', 'cancelled']),
   accepted: new Set(['preparing', 'cancelled']),
@@ -18,6 +19,7 @@ const transitions = {
   picked_up: new Set(),
   cancelled: new Set(),
 };
+
 
 
 router.post('/', authenticate, async (req, res, next) => {
