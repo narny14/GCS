@@ -4,18 +4,71 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../config/db');
 let messaging = null, initialized = false;
+
 function getMessaging() {
- if (initialized) return messaging;
- initialized = true;
- const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
- if (!keyPath || !fs.existsSync(keyPath)) { console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT_PATH absent; push désactivé.'); return null; }
- try {
-  const admin = require('firebase-admin');
-  const serviceAccount = JSON.parse(fs.readFileSync(path.resolve(keyPath), 'utf8'));
-  const app = admin.apps.length ? admin.app() : admin.initializeApp({credential: admin.credential.cert(serviceAccount)});
-  messaging = admin.messaging(app); return messaging;
- } catch (e) { console.error('[FCM] Initialisation impossible:', e.message); return null; }
+  if (initialized) return messaging;
+
+  const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+
+  if (!keyPath || !keyPath.trim()) {
+    console.error('[FCM DIAG] Variable FIREBASE_SERVICE_ACCOUNT_PATH absente.');
+    return null;
+  }
+
+  const resolvedPath = path.resolve(keyPath.trim());
+
+  if (!fs.existsSync(resolvedPath)) {
+    console.error('[FCM DIAG] Fichier JSON introuvable au chemin configuré.');
+    console.error('[FCM DIAG] Chemin absolu résolu :', resolvedPath);
+    return null;
+  }
+
+  try {
+    const admin = require('firebase-admin');
+
+    const raw = fs.readFileSync(resolvedPath, 'utf8');
+    const serviceAccount = JSON.parse(raw);
+
+    console.log('[FCM DIAG] Fichier JSON lisible : oui');
+    console.log(
+      '[FCM DIAG] Project ID présent :',
+      Boolean(serviceAccount.project_id)
+    );
+    console.log(
+      '[FCM DIAG] Client email présent :',
+      Boolean(serviceAccount.client_email)
+    );
+    console.log(
+      '[FCM DIAG] Clé privée présente :',
+      Boolean(serviceAccount.private_key)
+    );
+    console.log(
+      '[FCM DIAG] Project ID correspond à la variable :',
+      serviceAccount.project_id === process.env.FIREBASE_PROJECT_ID
+    );
+
+    const app =
+      admin.apps.length > 0
+        ? admin.app()
+        : admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+          });
+
+    messaging = admin.messaging(app);
+    initialized = true;
+
+    console.log('[FCM DIAG] Initialisation Firebase Admin réussie.');
+    return messaging;
+  } catch (error) {
+    console.error(
+      '[FCM DIAG] Échec de l’initialisation :',
+      error.code || error.name || 'ERREUR_INCONNUE',
+      error.message
+    );
+    return null;
+  }
 }
+
 const hash = token => crypto.createHash('sha256').update(token).digest('hex');
 const toStringData = obj => Object.fromEntries(Object.entries(obj || {}).filter(([,v]) => v != null).map(([k,v]) => [k,String(v)]));
 async function registerDevice({
