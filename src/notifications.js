@@ -1,10 +1,22 @@
-
-import {Platform, PermissionsAndroid} from 'react-native';
+import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+} from '@react-native-firebase/messaging';
+
 import {api} from './api';
 
 const INSTALLATION_KEY = '@fastfood_one_installation_id';
+
+function logFcmError(step, error) {
+  console.error(`[FCM][${step}]`, {
+    code: error?.code || 'UNKNOWN',
+    message: error?.message || String(error),
+    stack: error?.stack || null,
+  });
+}
 
 export async function getInstallationId() {
   let id = await AsyncStorage.getItem(INSTALLATION_KEY);
@@ -20,88 +32,60 @@ export async function getInstallationId() {
   return id;
 }
 
-async function requestAndroidNotificationPermission() {
-  if (Platform.OS !== 'android' || Number(Platform.Version) < 33) {
-    return true;
-  }
-
-  const result = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-  );
-
-  return result === PermissionsAndroid.RESULTS.GRANTED;
-}
-
+/**
+ * Génère le token FCM sans demander la permission
+ * d'afficher les notifications Android.
+ */
 export async function preparePushRegistration() {
-  const permitted = await requestAndroidNotificationPermission();
-
-  if (!permitted) {
-    throw new Error('Permission de notification refusée sur Android.');
-  }
-
   try {
-    await messaging().registerDeviceForRemoteMessages();
-  } catch (error) {
-    console.warn(
-      '[FCM] Enregistrement du périphérique :',
-      error?.message,
-    );
-  }
+    console.log('[FCM][1] Initialisation Firebase Messaging');
 
-  try {
-    const authorization = await messaging().requestPermission();
+    const messagingInstance = getMessaging();
 
-    const authorized =
-      authorization === messaging.AuthorizationStatus.AUTHORIZED ||
-      authorization === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (Platform.OS === 'ios' && !authorized) {
+    if (!messagingInstance) {
       throw new Error(
-        'Autorisation des notifications Firebase refusée.',
+        'Firebase Messaging ne fournit aucune instance.',
       );
     }
+
+    console.log('[FCM][2] Demande du token FCM');
+
+    const token = await getToken(messagingInstance);
+
+    if (
+      typeof token !== 'string' ||
+      token.trim().length < 20
+    ) {
+      throw new Error(
+        'Firebase a renvoyé un token FCM vide ou invalide.',
+      );
+    }
+
+    const installationId = await getInstallationId();
+
+    const registration = {
+      token: token.trim(),
+      installationId,
+      platform: Platform.OS,
+      deviceLabel: `${Platform.OS} FastFood One`,
+    };
+
+    console.log('[FCM][3] Token obtenu', {
+      platform: registration.platform,
+      tokenLength: registration.token.length,
+      installationId: registration.installationId,
+    });
+
+    return registration;
   } catch (error) {
-    if (Platform.OS === 'ios') {
-      throw error;
-    }
-
-    console.warn('[FCM] Permission Firebase :', error?.message);
+    logFcmError('GENERATION', error);
+    throw error;
   }
-
-  let token = null;
-
-  for (let attempt = 0; attempt < 3 && !token; attempt += 1) {
-    try {
-      token = await messaging().getToken();
-    } catch (error) {
-      console.warn(
-        `[FCM] Tentative ${attempt + 1} :`,
-        error?.message,
-      );
-
-      if (attempt < 2) {
-        await new Promise(resolve =>
-          setTimeout(resolve, 1000 * (attempt + 1)),
-        );
-      }
-    }
-  }
-
-  if (typeof token !== 'string' || token.trim().length < 20) {
-    throw new Error(
-      'Firebase n’a pas fourni de token FCM valide.',
-    );
-  }
-
-  return {
-    token: token.trim(),
-    installationId: await getInstallationId(),
-    platform: Platform.OS,
-    deviceLabel: `${Platform.OS} FastFood One`,
-  };
 }
 
-// Enregistre le token FCM sur le serveur après la connexion.
+/**
+ * Enregistrement d'un appareil après connexion.
+ */
 export async function registerPushNotifications() {
   const registration = await preparePushRegistration();
 
@@ -114,24 +98,23 @@ export async function registerPushNotifications() {
     throw new Error(
       response?.message ||
         response?.error ||
-        'Le serveur n’a pas confirmé l’enregistrement FCM.',
+        'Le serveur n’a pas confirmé le token FCM.',
     );
   }
 
-  console.log('[FCM] Appareil enregistré en base.');
+  console.log('[FCM] Token enregistré sur le serveur.');
 
   return registration;
 }
 
-// Écoute les notifications lorsque l'application est ouverte.
-export function listenForPush(onMessage) {
-  if (typeof onMessage !== 'function') {
-    throw new Error(
-      'Un callback est nécessaire pour écouter les notifications.',
-    );
+/**
+ * Écoute des notifications reçues lorsque l'application
+ * est au premier plan.
+ */
+export function listenForPush(onNotification) {
+  if (typeof onNotification !== 'function') {
+    throw new Error('Le callback de notification est invalide.');
   }
 
-  return messaging().onMessage(async remoteMessage => {
-    onMessage(remoteMessage);
-  });
+  return onMessage(getMessaging(), onNotification);
 }
