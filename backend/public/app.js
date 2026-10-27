@@ -23,18 +23,22 @@ const nextActions = {
     { status: 'accepted', label: 'Accepter' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
+
   accepted: [
     { status: 'preparing', label: 'Démarrer préparation' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
+
   preparing: [
     { status: 'ready', label: 'Commande prête' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
+
   ready: [
     { status: 'picked_up', label: 'Marquer récupérée / payée' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
+
   picked_up: [],
   cancelled: [],
 };
@@ -155,20 +159,57 @@ async function updateStatus(id, status) {
 
 
 
+
 function orderCard(order) {
-  const items = (order.items || []).map(i => `<li>${escapeHtml(i.quantity)} × ${escapeHtml(i.product_name)} — ${money(i.line_total)}</li>`).join('');
-  const actions = (nextActions[order.status] || []).map(a => `<button data-id="${escapeHtml(order.id)}" data-status="${escapeHtml(a.status)}">${escapeHtml(a.label)}</button>`).join('');
-  return `<article class="order ${escapeHtml(order.status)}">
+  const status = String(order.status || '')
+    .trim()
+    .toLowerCase();
+
+  const items = (order.items || [])
+    .map(i => `<li>${escapeHtml(i.quantity)} × ${escapeHtml(i.product_name)} — ${money(i.line_total)}</li>`)
+    .join('');
+
+  
+const allowedActions = nextActions[status] || [];
+
+const cancelAction = ['pending', 'accepted', 'preparing', 'ready'].includes(status)
+  ? [{ status: 'cancelled', label: 'Annuler la commande' }]
+  : [];
+
+const actions = [
+  ...allowedActions.filter(a => a.status !== 'cancelled'),
+  ...cancelAction,
+]
+  .map(a => `
+    <button
+      type="button"
+      class="${a.status === 'cancelled' ? 'danger' : ''}"
+      data-id="${escapeHtml(order.id)}"
+      data-status="${escapeHtml(a.status)}"
+    >${escapeHtml(a.label)}</button>
+  `)
+  .join('');
+
+
+  return `<article class="order ${escapeHtml(status)}">
     <h3>${escapeHtml(order.order_number)}</h3>
-    <div class="status">${escapeHtml(statusLabels[order.status] || order.status)}</div>
-    <p><strong>${escapeHtml(order.customer_name)}</strong><br>${escapeHtml(order.customer_phone)}<br><span class="muted">${escapeHtml(order.customer_email || '')}</span></p>
+    <div class="status">${escapeHtml(statusLabels[status] || status)}</div>
+    <p>
+      <strong>${escapeHtml(order.customer_name)}</strong><br>
+      ${escapeHtml(order.customer_phone)}<br>
+      <span class="muted">${escapeHtml(order.customer_email || '')}</span>
+    </p>
     <ul class="items">${items}</ul>
     ${order.notes ? `<p><strong>Note :</strong> ${escapeHtml(order.notes)}</p>` : ''}
     <p><strong>Total : ${money(order.total)}</strong> · Espèces au retrait · ${order.payment_status === 'paid' ? 'Payée' : 'Non payée'}</p>
     <p class="muted">Créée : ${order.created_at ? new Date(order.created_at).toLocaleString('fr-FR') : '—'}</p>
-    <div class="order-footer"><span class="muted">ID ${escapeHtml(order.id)}</span><div class="actions">${actions}</div></div>
+    <div class="order-footer">
+      <span class="muted">ID ${escapeHtml(order.id)}</span>
+      <div class="actions">${actions}</div>
+    </div>
   </article>`;
 }
+
 async function loadOrders() {
   if (!token) return;
   const data = await api('/api/orders/admin/all');
