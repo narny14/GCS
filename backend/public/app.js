@@ -280,70 +280,86 @@ bind('refresh', 'click', () => {
 
 
 /* -------- NAVIGATION CORRIGÉE DES PANNEAUX -------- */
+/* =========================================================
+   NAVIGATION — VERSION UNIQUE ET DIAGNOSTIQUE
+   ========================================================= */
+
 function switchPanel(panel) {
+  console.log('[NAV] switchPanel appelé avec :', panel);
+
   const panels = {
     orders:   'orders-panel',
     products: 'products-panel',
     meals:    'meals-panel',
   };
 
-  if (!Object.prototype.hasOwnProperty.call(panels, panel)) {
-    console.error('[FASTFOOD] Panneau inconnu :', panel);
+  if (!panels[panel]) {
+    console.error('[NAV] Panneau inconnu :', panel);
     return;
   }
 
-  // 1) Basculer la visibilité des panneaux
-  for (const [name, id] of Object.entries(panels)) {
+  Object.entries(panels).forEach(([name, id]) => {
     const el = document.getElementById(id);
     if (!el) {
-      console.error('[FASTFOOD] Élément HTML absent : #' + id);
-      continue;
+      console.error('[NAV] #' + id + ' absent du DOM');
+      return;
     }
-    el.classList.toggle('hidden', name !== panel);
-  }
+    const shouldShow = name === panel;
+    el.classList.toggle('hidden', !shouldShow);
+    console.log('[NAV] #' + id + ' visible =', shouldShow);
+  });
 
-  activePanel = panel;
-
-  // 2) Mettre à jour l'état des onglets
-  for (const name of Object.keys(panels)) {
+  Object.keys(panels).forEach(name => {
     const btn = document.getElementById('tab-' + name);
-    if (!btn) continue;
+    if (!btn) return;
     btn.classList.toggle('active', name === panel);
     btn.classList.toggle('secondary', name !== panel);
     btn.setAttribute('aria-selected', String(name === panel));
-  }
+  });
 
-  // 3) Charger les données du panneau (seulement si connecté)
+  activePanel = panel;
+
   if (!token) {
-    console.warn('[FASTFOOD] Non connecté — pas de chargement.');
+    console.warn('[NAV] token vide — pas de chargement de données');
     return;
   }
 
   if (panel === 'orders')        loadOrders().catch(showError);
   else if (panel === 'products') loadProducts().catch(showError);
-  else if (panel === 'meals')    loadMealOptions(); // gère ses erreurs en interne
+  else if (panel === 'meals')    loadMealOptions();
 }
 
 function initializeNavigation() {
+  console.log('[NAV] initializeNavigation démarré');
+
   ['orders', 'products', 'meals'].forEach(panel => {
-    const button = document.getElementById('tab-' + panel);
-    if (!button) {
-      console.error('[FASTFOOD] Bouton introuvable : #tab-' + panel);
+    const id = 'tab-' + panel;
+    const btn = document.getElementById(id);
+
+    if (!btn) {
+      console.error('[NAV] Bouton absent : #' + id);
       return;
     }
 
-    if (button.tagName === 'BUTTON') button.type = 'button';
+    // Sécurité : éviter le double-attachement
+    if (btn.dataset.navBound === '1') {
+      console.warn('[NAV] Écouteur déjà attaché sur #' + id);
+      return;
+    }
+    btn.dataset.navBound = '1';
+    btn.type = 'button';
 
-    button.addEventListener('click', event => {
+    btn.addEventListener('click', function (event) {
       event.preventDefault();
-      console.log('[FASTFOOD] Clic onglet :', panel);
+      console.log('[NAV] CLIC sur #' + id);
       switchPanel(panel);
     });
+
+    console.log('[NAV] Écouteur attaché sur #' + id);
   });
 
-  console.log('[FASTFOOD] Navigation initialisée.');
+  console.log('[NAV] initializeNavigation terminé');
 }
-
 
 /* -------------------- COMMANDES -------------------- */
 
