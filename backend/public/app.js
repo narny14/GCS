@@ -118,10 +118,20 @@ $('login-form').addEventListener('submit', async event => {
     }
     try { await loadOrders(); } catch (err) { showError(err); }
     try { await loadProducts(); } catch (err) { showError(err); }
+
+     // NOUVEAU : charger les éléments de composition des repas
+    try {
+      await loadMealOptions();
+    } catch (err) {
+      showError(err);
+    }
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(() => {
       loadOrders().catch(showError);
       if (activePanel === 'products') loadProducts().catch(showError);
+      if (activePanel === 'meals') {
+  loadMealOptions().catch(showError);
+}
     }, 10000);
   } catch (err) {
     $('login-error').textContent = `${err.message || 'Échec de connexion'}${err.url ? ` — ${err.url}` : ''}`;
@@ -244,14 +254,27 @@ async function loadOrders() {
 
 function switchPanel(panel) {
   activePanel = panel;
+
   $('orders-panel').classList.toggle('hidden', panel !== 'orders');
   $('products-panel').classList.toggle('hidden', panel !== 'products');
+  $('meals-panel').classList.toggle('hidden', panel !== 'meals');
+
   $('tab-orders').classList.toggle('active', panel === 'orders');
   $('tab-products').classList.toggle('active', panel === 'products');
+  $('tab-meals').classList.toggle('active', panel === 'meals');
+
   $('tab-orders').classList.toggle('secondary', panel !== 'orders');
   $('tab-products').classList.toggle('secondary', panel !== 'products');
+  $('tab-meals').classList.toggle('secondary', panel !== 'meals');
+
+  if (panel === 'orders') loadOrders().catch(showError);
   if (panel === 'products') loadProducts().catch(showError);
+  if (panel === 'meals') loadMealOptions();
 }
+
+$('tab-orders').addEventListener('click', () => switchPanel('orders'));
+$('tab-products').addEventListener('click', () => switchPanel('products'));
+$('tab-meals').addEventListener('click', () => switchPanel('meals'));
 $('tab-orders').addEventListener('click', () => switchPanel('orders'));
 $('tab-products').addEventListener('click', () => switchPanel('products'));
 function productMessage(message, isError=false) {
@@ -379,4 +402,305 @@ async function deleteProduct(id) {
     await api(`/api/products/${encodeURIComponent(id)}`, {method:'DELETE'});
     await loadProducts(); productMessage('Plat supprimé.');
   } catch (err) { showError(err); }
+}
+// =====================================================
+// FASTFOOD ONE — COMPOSITION DES REPAS
+// Table MySQL : meal_options
+// =====================================================
+
+const MEAL_OPTIONS_API = '/api/meal-composition/options';
+
+const mealGroups = {
+  base: 'Base',
+  viande: 'Viande',
+  accompagnement: 'Accompagnement',
+  legumes: 'Légumes',
+  boisson: 'Boisson',
+  supplements: 'Suppléments',
+};
+
+let mealOptions = [];
+
+function mealOptionMessage(message, isError = false) {
+  const el = $('meal-option-message');
+  if (!el) return;
+
+  el.textContent = message;
+  el.className = isError ? 'error' : 'muted';
+}
+
+function resetMealOptionForm() {
+  $('meal-option-form').reset();
+  $('meal-option-id').value = '';
+  $('meal-option-group').value = 'base';
+  $('meal-option-price').value = '';
+  $('meal-option-sort').value = '0';
+  $('meal-option-available').checked = true;
+  $('save-meal-option').textContent = 'Enregistrer l’élément';
+  $('cancel-meal-edit').classList.add('hidden');
+
+  mealOptionMessage('');
+}
+
+$('meal-option-form').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  if (!token) {
+    mealOptionMessage('Veuillez vous connecter.', true);
+    return;
+  }
+
+  const button = $('save-meal-option');
+  button.disabled = true;
+
+  try {
+    const name = $('meal-option-name').value.trim();
+    const priceText = $('meal-option-price').value.trim();
+    const price = Number(priceText);
+    const sortOrder = Number($('meal-option-sort').value || 0);
+
+    if (!name || !priceText || !Number.isFinite(price) || price < 0) {
+      throw new Error('Saisissez un nom et un prix valide.');
+    }
+
+    if (!Number.isInteger(sortOrder)) {
+      throw new Error('L’ordre d’affichage doit être un nombre entier.');
+    }
+
+    const payload = {
+      group_key: $('meal-option-group').value,
+      name,
+      description:
+        $('meal-option-description').value.trim() || null,
+      price,
+      image_url: $('meal-option-image').value.trim() || null,
+      is_available: $('meal-option-available').checked ? 1 : 0,
+      sort_order: sortOrder,
+    };
+
+    const id = $('meal-option-id').value.trim();
+
+    mealOptionMessage('Enregistrement en cours…');
+
+    await api(
+      id
+        ? `${MEAL_OPTIONS_API}/${encodeURIComponent(id)}`
+        : MEAL_OPTIONS_API,
+      {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    resetMealOptionForm();
+
+    mealOptionMessage(
+      id
+        ? 'Modification enregistrée avec succès.'
+        : 'Élément ajouté avec succès.'
+    );
+
+    await loadMealOptions();
+  } catch (err) {
+    mealOptionMessage(
+      err.message || 'Impossible d’enregistrer cet élément.',
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('cancel-meal-edit').addEventListener('click', resetMealOptionForm);
+
+async function loadMealOptions() {
+  if (!token) return;
+
+  try {
+    const data = await api(MEAL_OPTIONS_API);
+    mealOptions = Array.isArray(data.options) ? data.options : [];
+
+    renderMealOptions();
+  } catch (err) {
+    mealOptionMessage(
+      `Chargement impossible : ${err.message || err}`,
+      true
+    );
+  }
+}
+
+function renderMealOptions() {
+  const container = $('meal-options-list');
+
+  if (!container) return;
+
+  if (!mealOptions.length) {
+    container.innerHTML =
+      '<div class="empty">Aucun élément enregistré pour le moment.</div>';
+    return;
+  }
+
+  container.innerHTML = mealOptions.map(option => {
+    const id = escapeHtml(option.id);
+    const available = Number(option.is_available) === 1;
+
+    return `
+      <article class="product-card">
+        ${
+          option.image_url
+            ? `<img
+                class="product-card-image"
+                src="${escapeHtml(option.image_url)}"
+                alt="${escapeHtml(option.name)}"
+                loading="lazy"
+              >`
+            : '<div class="product-card-placeholder">🍽️</div>'
+        }
+
+        <div class="product-card-content">
+          <div class="product-card-top">
+            <h3>${escapeHtml(option.name)}</h3>
+            <span class="availability ${
+              available ? 'available' : 'unavailable'
+            }">
+              ${available ? 'Disponible' : 'Indisponible'}
+            </span>
+          </div>
+
+          <p class="muted">
+            ${escapeHtml(mealGroups[option.group_key] || option.group_key)}
+          </p>
+
+          <p>${escapeHtml(option.description || 'Aucune description')}</p>
+
+          <strong>${money(option.price)}</strong>
+
+          <div class="product-actions">
+            <button type="button" data-edit-meal="${id}">
+              Modifier
+            </button>
+
+            <button
+              type="button"
+              class="secondary"
+              data-toggle-meal="${id}"
+            >
+              ${available ? 'Désactiver' : 'Activer'}
+            </button>
+
+            <button
+              type="button"
+              class="danger"
+              data-delete-meal="${id}"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  container.querySelectorAll('[data-edit-meal]').forEach(button => {
+    button.addEventListener('click', () => {
+      editMealOption(button.dataset.editMeal);
+    });
+  });
+
+  container.querySelectorAll('[data-toggle-meal]').forEach(button => {
+    button.addEventListener('click', () => {
+      toggleMealOption(button.dataset.toggleMeal);
+    });
+  });
+
+  container.querySelectorAll('[data-delete-meal]').forEach(button => {
+    button.addEventListener('click', () => {
+      deleteMealOption(button.dataset.deleteMeal);
+    });
+  });
+}
+
+function editMealOption(id) {
+  const option = mealOptions.find(
+    item => String(item.id) === String(id)
+  );
+
+  if (!option) return;
+
+  $('meal-option-id').value = option.id;
+  $('meal-option-group').value = option.group_key;
+  $('meal-option-name').value = option.name || '';
+  $('meal-option-description').value = option.description || '';
+  $('meal-option-price').value = option.price;
+  $('meal-option-image').value = option.image_url || '';
+  $('meal-option-sort').value = option.sort_order ?? 0;
+  $('meal-option-available').checked =
+    Number(option.is_available) === 1;
+
+  $('save-meal-option').textContent = 'Enregistrer les modifications';
+  $('cancel-meal-edit').classList.remove('hidden');
+
+  mealOptionMessage(`Modification de : ${option.name}`);
+
+  $('meal-option-form').scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+}
+
+async function toggleMealOption(id) {
+  const option = mealOptions.find(
+    item => String(item.id) === String(id)
+  );
+
+  if (!option) return;
+
+  try {
+    await api(
+      `${MEAL_OPTIONS_API}/${encodeURIComponent(id)}/availability`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          is_available: Number(option.is_available) === 1 ? 0 : 1,
+        }),
+      }
+    );
+
+    mealOptionMessage('Disponibilité mise à jour.');
+    await loadMealOptions();
+  } catch (err) {
+    mealOptionMessage(
+      err.message || 'Impossible de modifier la disponibilité.',
+      true
+    );
+  }
+}
+
+async function deleteMealOption(id) {
+  const option = mealOptions.find(
+    item => String(item.id) === String(id)
+  );
+
+  if (!option) return;
+
+  if (!window.confirm(
+    `Supprimer « ${option.name} » ? Cette action est définitive.`
+  )) {
+    return;
+  }
+
+  try {
+    await api(
+      `${MEAL_OPTIONS_API}/${encodeURIComponent(id)}`,
+      { method: 'DELETE' }
+    );
+
+    mealOptionMessage('Élément supprimé.');
+    await loadMealOptions();
+  } catch (err) {
+    mealOptionMessage(
+      err.message || 'Impossible de supprimer cet élément.',
+      true
+    );
+  }
 }
