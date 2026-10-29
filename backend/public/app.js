@@ -285,7 +285,7 @@ function switchPanel(panel) {
   const panels = {
     orders: 'orders-panel',
     products: 'products-panel',
-    meals: 'meals-panel',
+    meals: 'meals-panel',  
   };
 
   console.log('[FASTFOOD] Changement de panneau :', panel);
