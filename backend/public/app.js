@@ -253,51 +253,73 @@ async function loadOrders() {
 }
 
 
+
 function switchPanel(panel) {
-  activePanel = panel;
+  console.log('[FASTFOOD] Ouverture du panneau :', panel);
 
-  // Afficher un seul panneau à la fois
-  $('orders-panel').classList.toggle('hidden', panel !== 'orders');
-  $('products-panel').classList.toggle('hidden', panel !== 'products');
-  $('meals-panel').classList.toggle('hidden', panel !== 'meals');
+  const panels = {
+    orders: 'orders-panel',
+    products: 'products-panel',
+    meals: 'meals-panel',
+  };
 
-  // Mettre à jour l'apparence des onglets
-  ['orders', 'products', 'meals'].forEach(name => {
-    const button = $(`tab-${name}`);
-    if (!button) return;
+  if (!panels[panel]) {
+    console.error('[FASTFOOD] Panneau inconnu :', panel);
+    return;
+  }
 
-    const active = name === panel;
-    button.classList.toggle('active', active);
-    button.classList.toggle('secondary', !active);
+  // Afficher le panneau sélectionné
+  Object.entries(panels).forEach(([name, id]) => {
+    const element = document.getElementById(id);
+
+    if (!element) {
+      console.error('[FASTFOOD] Élément HTML introuvable :', id);
+      return;
+    }
+
+    element.classList.toggle('hidden', name !== panel);
   });
 
-  // Confirmer visuellement que le clic fonctionne
+  activePanel = panel;
+
+  // Actualiser l'apparence des onglets
+  ['orders', 'products', 'meals'].forEach(name => {
+    const button = document.getElementById(`tab-${name}`);
+
+    if (button) {
+      button.classList.toggle('active', name === panel);
+      button.classList.toggle('secondary', name !== panel);
+    }
+  });
+
+  // Charger les données du panneau ouvert
   if (panel === 'meals') {
-    $('meal-option-message').textContent =
-      'Formulaire de composition ouvert. Chargement des éléments…';
-
-    loadMealOptions().catch(err => {
-      mealOptionMessage(
-        `Erreur de chargement : ${err.message || err}`,
-        true
-      );
-    });
-  }
-
-  if (panel === 'orders') {
+    mealOptionMessage('Panneau ouvert. Chargement des éléments…');
+    loadMealOptions();
+  } else if (panel === 'orders') {
     loadOrders().catch(showError);
-  }
-
-  if (panel === 'products') {
+  } else if (panel === 'products') {
     loadProducts().catch(showError);
   }
 }
 
 
 
-$('tab-orders').addEventListener('click', () => switchPanel('orders'));
-$('tab-products').addEventListener('click', () => switchPanel('products'));
-$('tab-meals').addEventListener('click', () => switchPanel('meals'));
+
+['orders', 'products', 'meals'].forEach(panel => {
+  const button = document.getElementById(`tab-${panel}`);
+
+  if (!button) {
+    console.error(`[FASTFOOD] Bouton introuvable : tab-${panel}`);
+    return;
+  }
+
+  button.addEventListener('click', () => {
+    console.log(`[FASTFOOD] Clic détecté : ${panel}`);
+    switchPanel(panel);
+  });
+});
+
 
 function productMessage(message, isError=false) {
   $('product-message').textContent = message;
