@@ -252,31 +252,53 @@ async function loadOrders() {
   $('global-error').textContent = '';
 }
 
+
 function switchPanel(panel) {
   activePanel = panel;
 
+  // Afficher un seul panneau à la fois
   $('orders-panel').classList.toggle('hidden', panel !== 'orders');
   $('products-panel').classList.toggle('hidden', panel !== 'products');
   $('meals-panel').classList.toggle('hidden', panel !== 'meals');
 
-  $('tab-orders').classList.toggle('active', panel === 'orders');
-  $('tab-products').classList.toggle('active', panel === 'products');
-  $('tab-meals').classList.toggle('active', panel === 'meals');
+  // Mettre à jour l'apparence des onglets
+  ['orders', 'products', 'meals'].forEach(name => {
+    const button = $(`tab-${name}`);
+    if (!button) return;
 
-  $('tab-orders').classList.toggle('secondary', panel !== 'orders');
-  $('tab-products').classList.toggle('secondary', panel !== 'products');
-  $('tab-meals').classList.toggle('secondary', panel !== 'meals');
+    const active = name === panel;
+    button.classList.toggle('active', active);
+    button.classList.toggle('secondary', !active);
+  });
 
-  if (panel === 'orders') loadOrders().catch(showError);
-  if (panel === 'products') loadProducts().catch(showError);
-  if (panel === 'meals') loadMealOptions();
+  // Confirmer visuellement que le clic fonctionne
+  if (panel === 'meals') {
+    $('meal-option-message').textContent =
+      'Formulaire de composition ouvert. Chargement des éléments…';
+
+    loadMealOptions().catch(err => {
+      mealOptionMessage(
+        `Erreur de chargement : ${err.message || err}`,
+        true
+      );
+    });
+  }
+
+  if (panel === 'orders') {
+    loadOrders().catch(showError);
+  }
+
+  if (panel === 'products') {
+    loadProducts().catch(showError);
+  }
 }
+
+
 
 $('tab-orders').addEventListener('click', () => switchPanel('orders'));
 $('tab-products').addEventListener('click', () => switchPanel('products'));
 $('tab-meals').addEventListener('click', () => switchPanel('meals'));
-$('tab-orders').addEventListener('click', () => switchPanel('orders'));
-$('tab-products').addEventListener('click', () => switchPanel('products'));
+
 function productMessage(message, isError=false) {
   $('product-message').textContent = message;
   $('product-message').className = isError ? 'error' : 'muted';
