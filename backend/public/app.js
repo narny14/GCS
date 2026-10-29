@@ -20,7 +20,7 @@ let selectedImageUrl = '';
 let previewObjectUrl = '';
 let activePanel = 'orders';
 
-const MEAL_OPTIONS_API = '/api/meal-composition/options';
+const MEAL_OPTIONS_API = '/api/meal-options';
 
 const statusLabels = {
   pending: 'Nouvelle',
