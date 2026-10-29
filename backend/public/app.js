@@ -278,56 +278,93 @@ bind('refresh', 'click', () => {
 
 /* -------------------- NAVIGATION DES PANNEAUX -------------------- */
 
-function switchPanel(panel) {
-  console.log('[FASTFOOD] Ouverture du panneau :', panel);
 
+/* -------- NAVIGATION CORRIGÉE DES PANNEAUX -------- */
+
+function switchPanel(panel) {
   const panels = {
     orders: 'orders-panel',
     products: 'products-panel',
     meals: 'meals-panel',
   };
 
+  console.log('[FASTFOOD] Changement de panneau :', panel);
+
   if (!Object.prototype.hasOwnProperty.call(panels, panel)) {
     console.error('[FASTFOOD] Panneau inconnu :', panel);
     return;
   }
 
-  // Ne pas laisser un problème de données bloquer la navigation.
-  Object.entries(panels).forEach(([name, id]) => {
-    const element = $(id);
+  // Afficher le panneau demandé sans dépendre de l'API.
+  for (const [name, id] of Object.entries(panels)) {
+    const element = document.getElementById(id);
 
     if (!element) {
-      console.error(`[FASTFOOD] Panneau HTML introuvable : #${id}`);
-      return;
+      console.error('[FASTFOOD] Élément HTML absent : #' + id);
+      continue;
     }
 
     element.classList.toggle('hidden', name !== panel);
-  });
+  }
 
   activePanel = panel;
 
-  ['orders', 'products', 'meals'].forEach(name => {
-    const button = $(`tab-${name}`);
-    if (!button) return;
+  // Mettre à jour les boutons de navigation.
+  for (const name of Object.keys(panels)) {
+    const button = document.getElementById('tab-' + name);
+
+    if (!button) {
+      console.error('[FASTFOOD] Bouton absent : #tab-' + name);
+      continue;
+    }
 
     button.classList.toggle('active', name === panel);
     button.classList.toggle('secondary', name !== panel);
     button.setAttribute('aria-selected', String(name === panel));
-  });
+  }
 
-  if (panel === 'meals') {
-    mealOptionMessage('Panneau ouvert. Chargement des éléments…');
-    loadMealOptions();
+  // Charger les données après l'affichage du panneau.
+  if (!token) {
+    console.warn('[FASTFOOD] Connexion requise pour charger les données.');
+    return;
   }
 
   if (panel === 'orders') {
     loadOrders().catch(showError);
-  }
-
-  if (panel === 'products') {
+  } else if (panel === 'products') {
     loadProducts().catch(showError);
+  } else if (panel === 'meals') {
+    loadMealOptions();
   }
 }
+
+function initializeNavigation() {
+  const tabs = {
+    'tab-orders': 'orders',
+    'tab-products': 'products',
+    'tab-meals': 'meals',
+  };
+
+  for (const [buttonId, panel] of Object.entries(tabs)) {
+    const button = document.getElementById(buttonId);
+
+    if (!button) {
+      console.error('[FASTFOOD] Bouton introuvable : #' + buttonId);
+      continue;
+    }
+
+    button.type = 'button';
+
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      console.log('[FASTFOOD] Clic détecté :', buttonId);
+      switchPanel(panel);
+    });
+  }
+
+  console.log('[FASTFOOD] Navigation initialisée.');
+}
+
 
 function initializeNavigation() {
   ['orders', 'products', 'meals'].forEach(panel => {
