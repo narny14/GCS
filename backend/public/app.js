@@ -280,115 +280,70 @@ bind('refresh', 'click', () => {
 
 
 /* -------- NAVIGATION CORRIGÉE DES PANNEAUX -------- */
-
 function switchPanel(panel) {
   const panels = {
-    orders: 'orders-panel',
+    orders:   'orders-panel',
     products: 'products-panel',
-    meals: 'meals-panel',  
+    meals:    'meals-panel',
   };
-
-  console.log('[FASTFOOD] Changement de panneau :', panel);
 
   if (!Object.prototype.hasOwnProperty.call(panels, panel)) {
     console.error('[FASTFOOD] Panneau inconnu :', panel);
     return;
   }
 
-  // Afficher le panneau demandé sans dépendre de l'API.
+  // 1) Basculer la visibilité des panneaux
   for (const [name, id] of Object.entries(panels)) {
-    const element = document.getElementById(id);
-
-    if (!element) {
+    const el = document.getElementById(id);
+    if (!el) {
       console.error('[FASTFOOD] Élément HTML absent : #' + id);
       continue;
     }
-
-    element.classList.toggle('hidden', name !== panel);
+    el.classList.toggle('hidden', name !== panel);
   }
 
   activePanel = panel;
 
-  // Mettre à jour les boutons de navigation.
+  // 2) Mettre à jour l'état des onglets
   for (const name of Object.keys(panels)) {
-    const button = document.getElementById('tab-' + name);
-
-    if (!button) {
-      console.error('[FASTFOOD] Bouton absent : #tab-' + name);
-      continue;
-    }
-
-    button.classList.toggle('active', name === panel);
-    button.classList.toggle('secondary', name !== panel);
-    button.setAttribute('aria-selected', String(name === panel));
+    const btn = document.getElementById('tab-' + name);
+    if (!btn) continue;
+    btn.classList.toggle('active', name === panel);
+    btn.classList.toggle('secondary', name !== panel);
+    btn.setAttribute('aria-selected', String(name === panel));
   }
 
-  // Charger les données après l'affichage du panneau.
+  // 3) Charger les données du panneau (seulement si connecté)
   if (!token) {
-    console.warn('[FASTFOOD] Connexion requise pour charger les données.');
+    console.warn('[FASTFOOD] Non connecté — pas de chargement.');
     return;
   }
 
-  if (panel === 'orders') {
-    loadOrders().catch(showError);
-  } else if (panel === 'products') {
-    loadProducts().catch(showError);
-  } else if (panel === 'meals') {
-    loadMealOptions();
-  }
+  if (panel === 'orders')        loadOrders().catch(showError);
+  else if (panel === 'products') loadProducts().catch(showError);
+  else if (panel === 'meals')    loadMealOptions(); // gère ses erreurs en interne
 }
 
 function initializeNavigation() {
-  const tabs = {
-    'tab-orders': 'orders',
-    'tab-products': 'products',
-    'tab-meals': 'meals',
-  };
-
-  for (const [buttonId, panel] of Object.entries(tabs)) {
-    const button = document.getElementById(buttonId);
-
+  ['orders', 'products', 'meals'].forEach(panel => {
+    const button = document.getElementById('tab-' + panel);
     if (!button) {
-      console.error('[FASTFOOD] Bouton introuvable : #' + buttonId);
-      continue;
+      console.error('[FASTFOOD] Bouton introuvable : #tab-' + panel);
+      return;
     }
 
-    button.type = 'button';
+    if (button.tagName === 'BUTTON') button.type = 'button';
 
-    button.addEventListener('click', function (event) {
+    button.addEventListener('click', event => {
       event.preventDefault();
-      console.log('[FASTFOOD] Clic détecté :', buttonId);
+      console.log('[FASTFOOD] Clic onglet :', panel);
       switchPanel(panel);
     });
-  }
+  });
 
   console.log('[FASTFOOD] Navigation initialisée.');
 }
 
-
-function initializeNavigation() {
-  ['orders', 'products', 'meals'].forEach(panel => {
-    const button = $(`tab-${panel}`);
-
-    if (!button) {
-      console.error(`[FASTFOOD] Bouton HTML introuvable : #tab-${panel}`);
-      return;
-    }
-
-    // Empêche une soumission involontaire si le bouton est dans un formulaire.
-    if (button.tagName === 'BUTTON') {
-      button.type = 'button';
-    }
-
-    button.addEventListener('click', event => {
-      event.preventDefault();
-
-      console.log(`[FASTFOOD] Clic détecté : ${panel}`);
-
-      switchPanel(panel);
-    });
-  });
-}
 
 /* -------------------- COMMANDES -------------------- */
 
@@ -946,7 +901,7 @@ bind('cancel-meal-edit', 'click', resetMealOptionForm);
 
 async function loadMealOptions() {
   if (!token) {
-    mealOptionMessage('Connecte-toi pour charger les éléments de composition.', true);
+    mealOptionMessage('Connecte-toi pour charger les éléments.', true);
     return;
   }
 
@@ -954,22 +909,39 @@ async function loadMealOptions() {
     mealOptionMessage('Chargement des éléments de composition…');
 
     const data = await api(MEAL_OPTIONS_API);
+    console.log('[FASTFOOD][REPAS] Réponse brute API :', data);
 
-    mealOptions = Array.isArray(data.options) ? data.options : [];
+    // Accepter plusieurs formats de réponse
+    let list = [];
+    if (Array.isArray(data))                list = data;
+    else if (Array.isArray(data.options))   list = data.options;
+    else if (Array.isArray(data.data))      list = data.data;
+    else if (Array.isArray(data.results))   list = data.results;
+    else if (Array.isArray(data.mealOptions)) list = data.mealOptions;
 
+    if (!list.length && data && typeof data === 'object') {
+      console.warn(
+        '[FASTFOOD][REPAS] Aucune liste détectée. Clés reçues :',
+        Object.keys(data)
+      );
+    }
+
+    mealOptions = list;
     renderMealOptions();
 
     mealOptionMessage(
-      `${mealOptions.length} élément(s) chargé(s).`
+      mealOptions.length
+        ? `${mealOptions.length} élément(s) chargé(s).`
+        : 'Aucun élément enregistré pour le moment.'
     );
   } catch (error) {
+    console.error('[FASTFOOD][REPAS] Erreur de chargement :', error);
     mealOptionMessage(
       `Chargement impossible : ${error.message || error}`,
       true
     );
   }
 }
-
 function renderMealOptions() {
   const container = $('meal-options-list');
 
@@ -1120,7 +1092,7 @@ function initializeFastFoodAdmin() {
 
   initializeNavigation();
 
-  // État initial : commandes affichées.
+  // On affiche "commandes" sans charger (token absent au démarrage)
   switchPanel('orders');
 
   console.log('[FASTFOOD] Initialisation terminée.');
