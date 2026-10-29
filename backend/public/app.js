@@ -1,154 +1,365 @@
+
 'use strict';
+
+/* =========================================================
+   FASTFOOD ONE — TABLEAU DE BORD ADMINISTRATEUR
+   Commandes, plats et composition des repas
+   ========================================================= */
+
+const API_BASE_URL =
+  'https://gcs-byteatomeneons-com-216696.hostingersite.com';
+
 const $ = id => document.getElementById(id);
-const API_BASE_URL = 'https://gcs-byteatomeneons-com-216696.hostingersite.com';
 
 let token = '';
 let knownOrderIds = new Set();
 let refreshTimer = null;
 let products = [];
+let mealOptions = [];
 let selectedImageUrl = '';
 let previewObjectUrl = '';
 let activePanel = 'orders';
 
+const MEAL_OPTIONS_API = '/api/meal-composition/options';
+
 const statusLabels = {
-  pending: 'Nouvelle', accepted: 'Acceptée', preparing: 'En préparation',
-  ready: 'Prête au retrait', picked_up: 'Récupérée', cancelled: 'Annulée'
+  pending: 'Nouvelle',
+  accepted: 'Acceptée',
+  preparing: 'En préparation',
+  ready: 'Prête au retrait',
+  picked_up: 'Récupérée',
+  cancelled: 'Annulée',
 };
-
-
-
 
 const nextActions = {
   pending: [
     { status: 'accepted', label: 'Accepter' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
-
   accepted: [
     { status: 'preparing', label: 'Démarrer préparation' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
-
   preparing: [
     { status: 'ready', label: 'Commande prête' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
-
   ready: [
     { status: 'picked_up', label: 'Marquer récupérée / payée' },
     { status: 'cancelled', label: 'Annuler la commande' },
   ],
-
   picked_up: [],
   cancelled: [],
 };
 
+const mealGroups = {
+  base: 'Base',
+  viande: 'Viande',
+  accompagnement: 'Accompagnement',
+  legumes: 'Légumes',
+  boisson: 'Boisson',
+  supplements: 'Suppléments',
+};
 
+/* -------------------- OUTILS GÉNÉRAUX -------------------- */
 
+function bind(id, eventName, callback) {
+  const element = $(id);
 
+  if (!element) {
+    console.error(`[FASTFOOD] Élément HTML absent : #${id}`);
+    return;
+  }
+
+  element.addEventListener(eventName, callback);
+}
 
 function money(value) {
-  return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'GBP'}).format(Number(value || 0));
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'GBP',
+  }).format(Number(value || 0));
 }
+
 function apiUrl(path) {
   if (/^https?:\/\//i.test(path)) return path;
+
   return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 }
+
 async function api(path, options = {}) {
-  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const isFormData =
+    typeof FormData !== 'undefined' &&
+    options.body instanceof FormData;
+
   const headers = {
-    ...(!isFormData && options.body ? {'Content-Type':'application/json'} : {}),
-    ...(token ? {Authorization:`Bearer ${token}`} : {}),
-    ...(options.headers || {})
+    ...(!isFormData && options.body
+      ? { 'Content-Type': 'application/json' }
+      : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
   };
+
   let response;
+
   try {
-    response = await fetch(apiUrl(path), {...options, headers});
+    response = await fetch(apiUrl(path), {
+      ...options,
+      headers,
+    });
   } catch (error) {
-    throw new Error(`Impossible de joindre l'API. Vérifie que le serveur est actif et que CORS autorise https://gcs.byteatomeneons.com.`);
+    throw new Error(
+      "Impossible de joindre l'API. Vérifie le serveur et la configuration CORS."
+    );
   }
+
   const contentType = response.headers.get('content-type') || '';
+
   const body = contentType.includes('application/json')
     ? await response.json().catch(() => ({}))
-    : {error:(await response.text().catch(() => '')).slice(0,300)};
+    : {
+        error: (await response.text().catch(() => '')).slice(0, 300),
+      };
+
   if (!response.ok) {
-    const error = new Error(body.error || body.message || `Erreur HTTP ${response.status}`);
+    const error = new Error(
+      body.error ||
+      body.message ||
+      `Erreur HTTP ${response.status}`
+    );
+
     error.status = response.status;
     error.url = apiUrl(path);
+
     throw error;
   }
+
   return body;
 }
-function showLoggedIn() {
-  $('login-panel').classList.add('hidden');
-  $('app-panel').classList.remove('hidden');
-  $('logout').classList.remove('hidden');
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
 }
+
+function showError(error) {
+  const element = $('global-error');
+  if (!element) {
+    console.error('[FASTFOOD]', error);
+    return;
+  }
+
+  element.textContent =
+    `${error.message || String(error)}` +
+    `${error.url ? ` — ${error.url}` : ''}`;
+}
+
+function showLoggedIn() {
+  $('login-panel')?.classList.add('hidden');
+  $('app-panel')?.classList.remove('hidden');
+  $('logout')?.classList.remove('hidden');
+}
+
 function showLoggedOut() {
-  $('login-panel').classList.remove('hidden');
-  $('app-panel').classList.add('hidden');
-  $('logout').classList.add('hidden');
+  $('login-panel')?.classList.remove('hidden');
+  $('app-panel')?.classList.add('hidden');
+  $('logout')?.classList.add('hidden');
+
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = null;
 }
-function showError(err) {
-  $('global-error').textContent = `${err.message || String(err)}${err.url ? ` — ${err.url}` : ''}`;
-}
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-  })[ch]);
-}
 
-$('login-form').addEventListener('submit', async event => {
+/* -------------------- CONNEXION -------------------- */
+
+bind('login-form', 'submit', async event => {
   event.preventDefault();
-  $('login-error').textContent = 'Connexion en cours…';
-  try {
-    const data = await api('/api/auth/login', {
-      method:'POST',
-      body:JSON.stringify({email:$('email').value.trim(), password:$('password').value})
-    });
-    if (!data.user || data.user.role !== 'admin') throw new Error('Ce compte n’a pas le rôle administrateur/restaurant attendu.');
-    if (!data.token) throw new Error('Aucun jeton reçu du serveur.');
-    token = data.token;
-    $('login-error').textContent = '';
-    showLoggedIn();
-    if ('Notification' in window && Notification.permission === 'default') {
-      try { await Notification.requestPermission(); } catch {}
-    }
-    try { await loadOrders(); } catch (err) { showError(err); }
-    try { await loadProducts(); } catch (err) { showError(err); }
 
-     // NOUVEAU : charger les éléments de composition des repas
+  const loginError = $('login-error');
+  if (loginError) loginError.textContent = 'Connexion en cours…';
+
+  try {
+    const email = $('email')?.value.trim();
+    const password = $('password')?.value;
+
+    if (!email || !password) {
+      throw new Error('Saisis ton adresse e-mail et ton mot de passe.');
+    }
+
+    const data = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!data.user || data.user.role !== 'admin') {
+      throw new Error(
+        "Ce compte n'a pas le rôle administrateur attendu."
+      );
+    }
+
+    if (!data.token) {
+      throw new Error('Aucun jeton reçu du serveur.');
+    }
+
+    token = data.token;
+
+    if (loginError) loginError.textContent = '';
+
+    showLoggedIn();
+
+    if (
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
+      try {
+        await Notification.requestPermission();
+      } catch (error) {
+        console.warn('[FASTFOOD] Notifications non activées.', error);
+      }
+    }
+
+    // Afficher les commandes même si un autre chargement échoue.
+    try {
+      await loadOrders();
+    } catch (error) {
+      showError(error);
+    }
+
+    try {
+      await loadProducts();
+    } catch (error) {
+      showError(error);
+    }
+
     try {
       await loadMealOptions();
-    } catch (err) {
-      showError(err);
+    } catch (error) {
+      mealOptionMessage(error.message, true);
     }
+
     if (refreshTimer) clearInterval(refreshTimer);
+
     refreshTimer = setInterval(() => {
       loadOrders().catch(showError);
-      if (activePanel === 'products') loadProducts().catch(showError);
+
+      if (activePanel === 'products') {
+        loadProducts().catch(showError);
+      }
+
       if (activePanel === 'meals') {
-  loadMealOptions().catch(showError);
-}
+        loadMealOptions();
+      }
     }, 10000);
-  } catch (err) {
-    $('login-error').textContent = `${err.message || 'Échec de connexion'}${err.url ? ` — ${err.url}` : ''}`;
+
+  } catch (error) {
+    if (loginError) {
+      loginError.textContent =
+        `${error.message || 'Échec de connexion'}` +
+        `${error.url ? ` — ${error.url}` : ''}`;
+    } else {
+      showError(error);
+    }
   }
 });
-$('logout').addEventListener('click', () => { token = ''; knownOrderIds.clear(); showLoggedOut(); });
-$('refresh').addEventListener('click', () => loadOrders().catch(showError));
 
+bind('logout', 'click', () => {
+  token = '';
+  knownOrderIds.clear();
+  showLoggedOut();
+});
 
+bind('refresh', 'click', () => {
+  loadOrders().catch(showError);
+});
 
+/* -------------------- NAVIGATION DES PANNEAUX -------------------- */
+
+function switchPanel(panel) {
+  console.log('[FASTFOOD] Ouverture du panneau :', panel);
+
+  const panels = {
+    orders: 'orders-panel',
+    products: 'products-panel',
+    meals: 'meals-panel',
+  };
+
+  if (!Object.prototype.hasOwnProperty.call(panels, panel)) {
+    console.error('[FASTFOOD] Panneau inconnu :', panel);
+    return;
+  }
+
+  // Ne pas laisser un problème de données bloquer la navigation.
+  Object.entries(panels).forEach(([name, id]) => {
+    const element = $(id);
+
+    if (!element) {
+      console.error(`[FASTFOOD] Panneau HTML introuvable : #${id}`);
+      return;
+    }
+
+    element.classList.toggle('hidden', name !== panel);
+  });
+
+  activePanel = panel;
+
+  ['orders', 'products', 'meals'].forEach(name => {
+    const button = $(`tab-${name}`);
+    if (!button) return;
+
+    button.classList.toggle('active', name === panel);
+    button.classList.toggle('secondary', name !== panel);
+    button.setAttribute('aria-selected', String(name === panel));
+  });
+
+  if (panel === 'meals') {
+    mealOptionMessage('Panneau ouvert. Chargement des éléments…');
+    loadMealOptions();
+  }
+
+  if (panel === 'orders') {
+    loadOrders().catch(showError);
+  }
+
+  if (panel === 'products') {
+    loadProducts().catch(showError);
+  }
+}
+
+function initializeNavigation() {
+  ['orders', 'products', 'meals'].forEach(panel => {
+    const button = $(`tab-${panel}`);
+
+    if (!button) {
+      console.error(`[FASTFOOD] Bouton HTML introuvable : #tab-${panel}`);
+      return;
+    }
+
+    // Empêche une soumission involontaire si le bouton est dans un formulaire.
+    if (button.tagName === 'BUTTON') {
+      button.type = 'button';
+    }
+
+    button.addEventListener('click', event => {
+      event.preventDefault();
+
+      console.log(`[FASTFOOD] Clic détecté : ${panel}`);
+
+      switchPanel(panel);
+    });
+  });
+}
+
+/* -------------------- COMMANDES -------------------- */
 
 async function updateStatus(id, status) {
   if (status === 'cancelled') {
-    const confirmed = window.confirm(
-      'Voulez-vous vraiment annuler cette commande ?'
-    );
-    if (!confirmed) return;
+    if (!window.confirm('Voulez-vous vraiment annuler cette commande ?')) {
+      return;
+    }
   }
 
   try {
@@ -160,333 +371,475 @@ async function updateStatus(id, status) {
     await loadOrders();
 
     if (status === 'cancelled') {
-      alert('Commande annulée.');
+      window.alert('Commande annulée.');
     }
-  } catch (err) {
-    showError(err);
+  } catch (error) {
+    showError(error);
   }
 }
 
-
-
-
 function orderCard(order) {
-  const status = String(order.status || '')
-    .trim()
-    .toLowerCase();
+  const status = String(order.status || '').trim().toLowerCase();
 
   const items = (order.items || [])
-    .map(i => `<li>${escapeHtml(i.quantity)} × ${escapeHtml(i.product_name)} — ${money(i.line_total)}</li>`)
+    .map(item =>
+      `<li>${escapeHtml(item.quantity)} × ` +
+      `${escapeHtml(item.product_name)} — ${money(item.line_total)}</li>`
+    )
     .join('');
 
-  
-const allowedActions = nextActions[status] || [];
+  const actions = (nextActions[status] || [])
+    .map(action => `
+      <button
+        type="button"
+        class="${action.status === 'cancelled' ? 'danger' : ''}"
+        data-id="${escapeHtml(order.id)}"
+        data-status="${escapeHtml(action.status)}"
+      >${escapeHtml(action.label)}</button>
+    `)
+    .join('');
 
-const cancelAction = ['pending', 'accepted', 'preparing', 'ready'].includes(status)
-  ? [{ status: 'cancelled', label: 'Annuler la commande' }]
-  : [];
-
-const actions = [
-  ...allowedActions.filter(a => a.status !== 'cancelled'),
-  ...cancelAction,
-]
-  .map(a => `
-    <button
-      type="button"
-      class="${a.status === 'cancelled' ? 'danger' : ''}"
-      data-id="${escapeHtml(order.id)}"
-      data-status="${escapeHtml(a.status)}"
-    >${escapeHtml(a.label)}</button>
-  `)
-  .join('');
-
-
-  return `<article class="order ${escapeHtml(status)}">
-    <h3>${escapeHtml(order.order_number)}</h3>
-    <div class="status">${escapeHtml(statusLabels[status] || status)}</div>
-    <p>
-      <strong>${escapeHtml(order.customer_name)}</strong><br>
-      ${escapeHtml(order.customer_phone)}<br>
-      <span class="muted">${escapeHtml(order.customer_email || '')}</span>
-    </p>
-    <ul class="items">${items}</ul>
-    ${order.notes ? `<p><strong>Note :</strong> ${escapeHtml(order.notes)}</p>` : ''}
-    <p><strong>Total : ${money(order.total)}</strong> · Espèces au retrait · ${order.payment_status === 'paid' ? 'Payée' : 'Non payée'}</p>
-    <p class="muted">Créée : ${order.created_at ? new Date(order.created_at).toLocaleString('fr-FR') : '—'}</p>
-    <div class="order-footer">
-      <span class="muted">ID ${escapeHtml(order.id)}</span>
-      <div class="actions">${actions}</div>
-    </div>
-  </article>`;
+  return `
+    <article class="order ${escapeHtml(status)}">
+      <h3>${escapeHtml(order.order_number)}</h3>
+      <div class="status">${escapeHtml(statusLabels[status] || status)}</div>
+      <p>
+        <strong>${escapeHtml(order.customer_name)}</strong><br>
+        ${escapeHtml(order.customer_phone)}<br>
+        <span class="muted">${escapeHtml(order.customer_email || '')}</span>
+      </p>
+      <ul class="items">${items}</ul>
+      ${order.notes
+        ? `<p><strong>Note :</strong> ${escapeHtml(order.notes)}</p>`
+        : ''}
+      <p>
+        <strong>Total : ${money(order.total)}</strong> · Espèces au retrait ·
+        ${order.payment_status === 'paid' ? 'Payée' : 'Non payée'}
+      </p>
+      <p class="muted">
+        Créée : ${order.created_at
+          ? new Date(order.created_at).toLocaleString('fr-FR')
+          : '—'}
+      </p>
+      <div class="order-footer">
+        <span class="muted">ID ${escapeHtml(order.id)}</span>
+        <div class="actions">${actions}</div>
+      </div>
+    </article>
+  `;
 }
 
 async function loadOrders() {
   if (!token) return;
+
   const data = await api('/api/orders/admin/all');
   const orders = data.orders || [];
-  const pendingIds = orders.filter(o => o.status === 'pending').map(o => String(o.id));
+
+  const pendingIds = orders
+    .filter(order => order.status === 'pending')
+    .map(order => String(order.id));
+
   const hasNew = pendingIds.some(id => !knownOrderIds.has(id));
+
   if (hasNew && knownOrderIds.size) {
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
       if (AudioContextClass) {
-        const ctx = new AudioContextClass(), osc = ctx.createOscillator(), gain = ctx.createGain();
-        osc.frequency.value = 880; gain.gain.value = 0.08;
-        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.25);
-        osc.onended = () => ctx.close();
+        const context = new AudioContextClass();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.08;
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.25);
+
+        oscillator.onended = () => context.close();
       }
-    } catch {}
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Nouvelle commande — FastFood One', {body:`${pendingIds.length} commande(s) en attente. Ouvrez le tableau de bord.`});
+    } catch (error) {
+      console.warn('[FASTFOOD] Son indisponible.', error);
     }
+
+    if (
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      new Notification('Nouvelle commande — FastFood One', {
+        body: `${pendingIds.length} commande(s) en attente.`,
+      });
+    }
+
     document.title = '🔔 Nouvelle commande — FastFood One';
-  } else document.title = 'FastFood One — Restaurant';
-
-  knownOrderIds = new Set(orders.map(o => String(o.id)));
-  $('summary').innerHTML = ['pending','accepted','preparing','ready'].map(s =>
-    `<span class="pill">${statusLabels[s]} : <strong>${orders.filter(o => o.status === s).length}</strong></span>`
-  ).join('');
-  $('orders').innerHTML = orders.length ? orders.map(orderCard).join('') : '<div class="empty">Aucune commande pour le moment.</div>';
-  $('orders').querySelectorAll('button[data-status]').forEach(b => b.addEventListener('click', () => updateStatus(b.dataset.id, b.dataset.status)));
-  $('last-refresh').textContent = `Mis à jour à ${new Date().toLocaleTimeString('fr-FR')} · actualisation toutes les 10 secondes`;
-  $('global-error').textContent = '';
-}
-
-
-
-function switchPanel(panel) {
-  console.log('[FASTFOOD] Ouverture du panneau :', panel);
-
-  const panels = {
-    orders: 'orders-panel',
-    products: 'products-panel',
-    meals: 'meals-panel',
-  };
-
-  if (!panels[panel]) {
-    console.error('[FASTFOOD] Panneau inconnu :', panel);
-    return;
+  } else {
+    document.title = 'FastFood One — Restaurant';
   }
 
-  // Afficher le panneau sélectionné
-  Object.entries(panels).forEach(([name, id]) => {
-    const element = document.getElementById(id);
+  knownOrderIds = new Set(orders.map(order => String(order.id)));
 
-    if (!element) {
-      console.error('[FASTFOOD] Élément HTML introuvable :', id);
-      return;
-    }
-
-    element.classList.toggle('hidden', name !== panel);
-  });
-
-  activePanel = panel;
-
-  // Actualiser l'apparence des onglets
-  ['orders', 'products', 'meals'].forEach(name => {
-    const button = document.getElementById(`tab-${name}`);
-
-    if (button) {
-      button.classList.toggle('active', name === panel);
-      button.classList.toggle('secondary', name !== panel);
-    }
-  });
-
-  // Charger les données du panneau ouvert
-  if (panel === 'meals') {
-    mealOptionMessage('Panneau ouvert. Chargement des éléments…');
-    loadMealOptions();
-  } else if (panel === 'orders') {
-    loadOrders().catch(showError);
-  } else if (panel === 'products') {
-    loadProducts().catch(showError);
-  }
-}
-
-
-
-
-['orders', 'products', 'meals'].forEach(panel => {
-  const button = document.getElementById(`tab-${panel}`);
-
-  if (!button) {
-    console.error(`[FASTFOOD] Bouton introuvable : tab-${panel}`);
-    return;
+  if ($('summary')) {
+    $('summary').innerHTML = [
+      'pending',
+      'accepted',
+      'preparing',
+      'ready',
+    ].map(status =>
+      `<span class="pill">${statusLabels[status]} : ` +
+      `<strong>${orders.filter(order => order.status === status).length}</strong></span>`
+    ).join('');
   }
 
-  button.addEventListener('click', () => {
-    console.log(`[FASTFOOD] Clic détecté : ${panel}`);
-    switchPanel(panel);
-  });
-});
+  if ($('orders')) {
+    $('orders').innerHTML = orders.length
+      ? orders.map(orderCard).join('')
+      : '<div class="empty">Aucune commande pour le moment.</div>';
 
+    $('orders').querySelectorAll('button[data-status]').forEach(button => {
+      button.addEventListener('click', () => {
+        updateStatus(button.dataset.id, button.dataset.status);
+      });
+    });
+  }
 
-function productMessage(message, isError=false) {
-  $('product-message').textContent = message;
-  $('product-message').className = isError ? 'error' : 'muted';
+  if ($('last-refresh')) {
+    $('last-refresh').textContent =
+      `Mis à jour à ${new Date().toLocaleTimeString('fr-FR')} · ` +
+      'actualisation toutes les 10 secondes';
+  }
+
+  if ($('global-error')) $('global-error').textContent = '';
 }
+
+/* -------------------- PLATS -------------------- */
+
+function productMessage(message, isError = false) {
+  const element = $('product-message');
+  if (!element) return;
+
+  element.textContent = message;
+  element.className = isError ? 'error' : 'muted';
+}
+
 function resetProductForm() {
-  $('product-form').reset();
-  $('product-id').value = '';
-  $('product-category').value = 'Pizza';
-  $('product-form-title').textContent = 'Ajouter un plat';
-  $('save-product').textContent = 'Enregistrer le plat';
-  $('cancel-edit').classList.add('hidden');
-  $('product-image').value = '';
+  $('product-form')?.reset();
+
+  if ($('product-id')) $('product-id').value = '';
+  if ($('product-category')) $('product-category').value = 'Pizza';
+
+  if ($('product-form-title')) {
+    $('product-form-title').textContent = 'Ajouter un plat';
+  }
+
+  if ($('save-product')) {
+    $('save-product').textContent = 'Enregistrer le plat';
+  }
+
+  $('cancel-edit')?.classList.add('hidden');
+
+  if ($('product-image')) $('product-image').value = '';
+
   selectedImageUrl = '';
-  if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = ''; }
-  $('image-preview').src = '';
-  $('image-preview').classList.add('hidden');
-  $('image-placeholder').classList.remove('hidden');
+
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = '';
+  }
+
+  if ($('image-preview')) {
+    $('image-preview').removeAttribute('src');
+    $('image-preview').classList.add('hidden');
+  }
+
+  $('image-placeholder')?.classList.remove('hidden');
+
   productMessage('');
 }
-$('cancel-edit').addEventListener('click', resetProductForm);
-$('product-image').addEventListener('change', () => {
-  const file = $('product-image').files[0];
-  if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = ''; }
+
+bind('cancel-edit', 'click', resetProductForm);
+
+bind('product-image', 'change', () => {
+  const file = $('product-image')?.files?.[0];
+
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = '';
+  }
+
   if (!file) {
-    $('image-preview').classList.toggle('hidden', !selectedImageUrl);
-    $('image-placeholder').classList.toggle('hidden', !!selectedImageUrl);
-    if (selectedImageUrl) $('image-preview').src = selectedImageUrl;
+    if ($('image-preview')) {
+      $('image-preview').classList.toggle('hidden', !selectedImageUrl);
+      if (selectedImageUrl) $('image-preview').src = selectedImageUrl;
+    }
+
+    $('image-placeholder')?.classList.toggle('hidden', !!selectedImageUrl);
     return;
   }
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+
+  if (
+    !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+    file.size > 5 * 1024 * 1024
+  ) {
     $('product-image').value = '';
-    productMessage('Format non accepté ou image supérieure à 5 Mo. Utilisez JPG, PNG ou WEBP.', true);
+    productMessage(
+      'Format non accepté ou image supérieure à 5 Mo. Utilisez JPG, PNG ou WEBP.',
+      true
+    );
     return;
   }
+
   previewObjectUrl = URL.createObjectURL(file);
-  $('image-preview').src = previewObjectUrl;
-  $('image-preview').classList.remove('hidden');
-  $('image-placeholder').classList.add('hidden');
+
+  if ($('image-preview')) {
+    $('image-preview').src = previewObjectUrl;
+    $('image-preview').classList.remove('hidden');
+  }
+
+  $('image-placeholder')?.classList.add('hidden');
+
   productMessage('Photo prête à être envoyée.');
 });
+
 async function uploadSelectedImage() {
-  const file = $('product-image').files[0];
+  const file = $('product-image')?.files?.[0];
+
   if (!file) return selectedImageUrl || null;
-  const formData = new FormData(); formData.append('image', file);
-  const result = await api('/api/products/upload-image', {method:'POST', body:formData});
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const result = await api('/api/products/upload-image', {
+    method: 'POST',
+    body: formData,
+  });
+
   return result.image_url;
 }
-$('product-form').addEventListener('submit', async event => {
+
+bind('product-form', 'submit', async event => {
   event.preventDefault();
   if (!token) return;
-  const button = $('save-product'); button.disabled = true;
+
+  const button = $('save-product');
+  if (button) button.disabled = true;
+
   try {
     productMessage('Envoi de la photo et enregistrement…');
+
     const image_url = await uploadSelectedImage();
+
     const payload = {
-      name:$('product-name').value.trim(),
-      description:$('product-description').value.trim(),
-      category:$('product-category').value,
-      price:Number($('product-price').value),
-      image_url
+      name: $('product-name').value.trim(),
+      description: $('product-description').value.trim(),
+      category: $('product-category').value,
+      price: Number($('product-price').value),
+      image_url,
     };
+
     const id = $('product-id').value;
-    await api(id ? `/api/products/${encodeURIComponent(id)}` : '/api/products', {
-      method:id ? 'PATCH' : 'POST', body:JSON.stringify(payload)
-    });
-    resetProductForm(); productMessage('Plat enregistré avec succès.');
+
+    await api(
+      id
+        ? `/api/products/${encodeURIComponent(id)}`
+        : '/api/products',
+      {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    resetProductForm();
+    productMessage('Plat enregistré avec succès.');
+
     await loadProducts();
-  } catch (err) { productMessage(err.message || 'Échec de l’enregistrement.', true); }
-  finally { button.disabled = false; }
+  } catch (error) {
+    productMessage(error.message || 'Échec de l’enregistrement.', true);
+  } finally {
+    if (button) button.disabled = false;
+  }
 });
+
 async function loadProducts() {
   if (!token) return;
+
   const data = await api('/api/products/admin/all');
   products = data.products || [];
-  $('products-list').innerHTML = products.length ? products.map(p => `
-    <article class="product-card">
-      ${p.image_url ? `<img class="product-card-image" src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}" loading="lazy">` : '<div class="product-card-placeholder">🍔</div>'}
-      <div class="product-card-content">
-        <div class="product-card-top"><h3>${escapeHtml(p.name)}</h3><span class="availability ${Number(p.is_available) ? 'available' : 'unavailable'}">${Number(p.is_available) ? 'Disponible' : 'Indisponible'}</span></div>
-        <p class="muted">${escapeHtml(p.category || 'Fast-food')}</p><p>${escapeHtml(p.description || 'Aucune description')}</p><strong>${money(p.price)}</strong>
-        <div class="product-actions">
-          <button data-edit-product="${escapeHtml(p.id)}" type="button">Modifier</button>
-          <button data-toggle-product="${escapeHtml(p.id)}" data-available="${Number(p.is_available) ? '1':'0'}" class="secondary" type="button">${Number(p.is_available) ? 'Désactiver':'Activer'}</button>
-          <button data-delete-product="${escapeHtml(p.id)}" class="danger" type="button">Supprimer</button>
+
+  const container = $('products-list');
+  if (!container) return;
+
+  container.innerHTML = products.length
+    ? products.map(product => `
+      <article class="product-card">
+        ${product.image_url
+          ? `<img class="product-card-image"
+                  src="${escapeHtml(product.image_url)}"
+                  alt="${escapeHtml(product.name)}"
+                  loading="lazy">`
+          : '<div class="product-card-placeholder">🍔</div>'}
+        <div class="product-card-content">
+          <div class="product-card-top">
+            <h3>${escapeHtml(product.name)}</h3>
+            <span class="availability ${
+              Number(product.is_available) ? 'available' : 'unavailable'
+            }">${
+              Number(product.is_available) ? 'Disponible' : 'Indisponible'
+            }</span>
+          </div>
+          <p class="muted">${escapeHtml(product.category || 'Fast-food')}</p>
+          <p>${escapeHtml(product.description || 'Aucune description')}</p>
+          <strong>${money(product.price)}</strong>
+          <div class="product-actions">
+            <button type="button" data-edit-product="${escapeHtml(product.id)}">Modifier</button>
+            <button type="button" class="secondary"
+              data-toggle-product="${escapeHtml(product.id)}"
+              data-available="${Number(product.is_available) ? '1' : '0'}">
+              ${Number(product.is_available) ? 'Désactiver' : 'Activer'}
+            </button>
+            <button type="button" class="danger"
+              data-delete-product="${escapeHtml(product.id)}">Supprimer</button>
+          </div>
         </div>
-      </div>
-    </article>`).join('') : '<div class="empty">Aucun plat. Utilisez le formulaire ci-dessus pour ajouter le premier.</div>';
-  $('products-list').querySelectorAll('[data-edit-product]').forEach(b => b.addEventListener('click', () => editProduct(b.dataset.editProduct)));
-  $('products-list').querySelectorAll('[data-toggle-product]').forEach(b => b.addEventListener('click', () => toggleProduct(b.dataset.toggleProduct, b.dataset.available === '1')));
-  $('products-list').querySelectorAll('[data-delete-product]').forEach(b => b.addEventListener('click', () => deleteProduct(b.dataset.deleteProduct)));
+      </article>
+    `).join('')
+    : '<div class="empty">Aucun plat enregistré.</div>';
+
+  container.querySelectorAll('[data-edit-product]').forEach(button => {
+    button.addEventListener('click', () => editProduct(button.dataset.editProduct));
+  });
+
+  container.querySelectorAll('[data-toggle-product]').forEach(button => {
+    button.addEventListener('click', () =>
+      toggleProduct(
+        button.dataset.toggleProduct,
+        button.dataset.available === '1'
+      )
+    );
+  });
+
+  container.querySelectorAll('[data-delete-product]').forEach(button => {
+    button.addEventListener('click', () =>
+      deleteProduct(button.dataset.deleteProduct)
+    );
+  });
 }
+
 function editProduct(id) {
-  const p = products.find(item => String(item.id) === String(id)); if (!p) return;
-  $('product-id').value = p.id; $('product-name').value = p.name || ''; $('product-price').value = p.price;
+  const product = products.find(item => String(item.id) === String(id));
+  if (!product) return;
+
+  $('product-id').value = product.id;
+  $('product-name').value = product.name || '';
+  $('product-price').value = product.price;
+
   const categorySelect = $('product-category');
-  const savedCategory = p.category || 'Pizza';
-  if (savedCategory && !Array.from(categorySelect.options).some(option => option.value === savedCategory)) {
+  const savedCategory = product.category || 'Pizza';
+
+  if (
+    savedCategory &&
+    !Array.from(categorySelect.options).some(option => option.value === savedCategory)
+  ) {
     categorySelect.add(new Option(savedCategory, savedCategory));
   }
+
   categorySelect.value = savedCategory;
-  $('product-description').value = p.description || '';
-  selectedImageUrl = p.image_url || ''; $('product-image').value = '';
-  $('product-form-title').textContent = `Modifier : ${p.name}`;
-  $('save-product').textContent = 'Enregistrer les modifications'; $('cancel-edit').classList.remove('hidden');
+  $('product-description').value = product.description || '';
+
+  selectedImageUrl = product.image_url || '';
+  $('product-image').value = '';
+
+  $('product-form-title').textContent = `Modifier : ${product.name}`;
+  $('save-product').textContent = 'Enregistrer les modifications';
+  $('cancel-edit').classList.remove('hidden');
+
   if (selectedImageUrl) {
-    $('image-preview').src = selectedImageUrl; $('image-preview').classList.remove('hidden'); $('image-placeholder').classList.add('hidden');
+    $('image-preview').src = selectedImageUrl;
+    $('image-preview').classList.remove('hidden');
+    $('image-placeholder').classList.add('hidden');
   } else {
-    $('image-preview').classList.add('hidden'); $('image-placeholder').classList.remove('hidden');
+    $('image-preview').classList.add('hidden');
+    $('image-placeholder').classList.remove('hidden');
   }
-  productMessage('Choisissez une nouvelle photo uniquement si vous souhaitez remplacer l’actuelle.');
-  $('product-form-title').scrollIntoView({behavior:'smooth',block:'start'});
+
+  productMessage('Choisissez une nouvelle photo uniquement pour remplacer l’actuelle.');
+
+  $('product-form-title').scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
 }
+
 async function toggleProduct(id, currentlyAvailable) {
   try {
-    await api(`/api/products/${encodeURIComponent(id)}/availability`, {method:'PATCH',body:JSON.stringify({is_available:!currentlyAvailable})});
+    await api(`/api/products/${encodeURIComponent(id)}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_available: !currentlyAvailable }),
+    });
+
     await loadProducts();
-  } catch (err) { showError(err); }
+  } catch (error) {
+    showError(error);
+  }
 }
+
 async function deleteProduct(id) {
-  const p = products.find(item => String(item.id) === String(id));
-  if (!p || !window.confirm(`Supprimer « ${p.name} » ? Cette action est définitive.`)) return;
+  const product = products.find(item => String(item.id) === String(id));
+
+  if (
+    !product ||
+    !window.confirm(`Supprimer « ${product.name} » ? Cette action est définitive.`)
+  ) {
+    return;
+  }
+
   try {
-    await api(`/api/products/${encodeURIComponent(id)}`, {method:'DELETE'});
-    await loadProducts(); productMessage('Plat supprimé.');
-  } catch (err) { showError(err); }
+    await api(`/api/products/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+
+    await loadProducts();
+    productMessage('Plat supprimé.');
+  } catch (error) {
+    showError(error);
+  }
 }
-// =====================================================
-// FASTFOOD ONE — COMPOSITION DES REPAS
-// Table MySQL : meal_options
-// =====================================================
 
-const MEAL_OPTIONS_API = '/api/meal-composition/options';
-
-const mealGroups = {
-  base: 'Base',
-  viande: 'Viande',
-  accompagnement: 'Accompagnement',
-  legumes: 'Légumes',
-  boisson: 'Boisson',
-  supplements: 'Suppléments',
-};
-
-let mealOptions = [];
+/* -------------------- COMPOSITION DES REPAS -------------------- */
 
 function mealOptionMessage(message, isError = false) {
-  const el = $('meal-option-message');
-  if (!el) return;
+  const element = $('meal-option-message');
+  if (!element) {
+    console[isError ? 'error' : 'log']('[FASTFOOD][REPAS]', message);
+    return;
+  }
 
-  el.textContent = message;
-  el.className = isError ? 'error' : 'muted';
+  element.textContent = message;
+  element.className = isError ? 'error' : 'muted';
 }
 
 function resetMealOptionForm() {
-  $('meal-option-form').reset();
-  $('meal-option-id').value = '';
-  $('meal-option-group').value = 'base';
-  $('meal-option-price').value = '';
-  $('meal-option-sort').value = '0';
-  $('meal-option-available').checked = true;
-  $('save-meal-option').textContent = 'Enregistrer l’élément';
-  $('cancel-meal-edit').classList.add('hidden');
+  $('meal-option-form')?.reset();
+
+  if ($('meal-option-id')) $('meal-option-id').value = '';
+  if ($('meal-option-group')) $('meal-option-group').value = 'base';
+  if ($('meal-option-price')) $('meal-option-price').value = '';
+  if ($('meal-option-sort')) $('meal-option-sort').value = '0';
+  if ($('meal-option-available')) $('meal-option-available').checked = true;
+
+  if ($('save-meal-option')) {
+    $('save-meal-option').textContent = 'Enregistrer l’élément';
+  }
+
+  $('cancel-meal-edit')?.classList.add('hidden');
 
   mealOptionMessage('');
 }
 
-$('meal-option-form').addEventListener('submit', async event => {
+bind('meal-option-form', 'submit', async event => {
   event.preventDefault();
 
   if (!token) {
@@ -495,7 +848,7 @@ $('meal-option-form').addEventListener('submit', async event => {
   }
 
   const button = $('save-meal-option');
-  button.disabled = true;
+  if (button) button.disabled = true;
 
   try {
     const name = $('meal-option-name').value.trim();
@@ -503,7 +856,7 @@ $('meal-option-form').addEventListener('submit', async event => {
     const price = Number(priceText);
     const sortOrder = Number($('meal-option-sort').value || 0);
 
-    if (!name || !priceText || !Number.isFinite(price) || price < 0) {
+    if (!name || priceText === '' || !Number.isFinite(price) || price < 0) {
       throw new Error('Saisissez un nom et un prix valide.');
     }
 
@@ -514,8 +867,7 @@ $('meal-option-form').addEventListener('submit', async event => {
     const payload = {
       group_key: $('meal-option-group').value,
       name,
-      description:
-        $('meal-option-description').value.trim() || null,
+      description: $('meal-option-description').value.trim() || null,
       price,
       image_url: $('meal-option-image').value.trim() || null,
       is_available: $('meal-option-available').checked ? 1 : 0,
@@ -539,35 +891,43 @@ $('meal-option-form').addEventListener('submit', async event => {
     resetMealOptionForm();
 
     mealOptionMessage(
-      id
-        ? 'Modification enregistrée avec succès.'
-        : 'Élément ajouté avec succès.'
+      id ? 'Modification enregistrée avec succès.' : 'Élément ajouté avec succès.'
     );
 
     await loadMealOptions();
-  } catch (err) {
+  } catch (error) {
     mealOptionMessage(
-      err.message || 'Impossible d’enregistrer cet élément.',
+      error.message || 'Impossible d’enregistrer cet élément.',
       true
     );
   } finally {
-    button.disabled = false;
+    if (button) button.disabled = false;
   }
 });
 
-$('cancel-meal-edit').addEventListener('click', resetMealOptionForm);
+bind('cancel-meal-edit', 'click', resetMealOptionForm);
 
 async function loadMealOptions() {
-  if (!token) return;
+  if (!token) {
+    mealOptionMessage('Connecte-toi pour charger les éléments de composition.', true);
+    return;
+  }
 
   try {
+    mealOptionMessage('Chargement des éléments de composition…');
+
     const data = await api(MEAL_OPTIONS_API);
+
     mealOptions = Array.isArray(data.options) ? data.options : [];
 
     renderMealOptions();
-  } catch (err) {
+
     mealOptionMessage(
-      `Chargement impossible : ${err.message || err}`,
+      `${mealOptions.length} élément(s) chargé(s).`
+    );
+  } catch (error) {
+    mealOptionMessage(
+      `Chargement impossible : ${error.message || error}`,
       true
     );
   }
@@ -576,7 +936,14 @@ async function loadMealOptions() {
 function renderMealOptions() {
   const container = $('meal-options-list');
 
-  if (!container) return;
+  if (!container) {
+    console.error('[FASTFOOD] Élément HTML absent : #meal-options-list');
+    mealOptionMessage(
+      'Le panneau est ouvert, mais #meal-options-list est absent du HTML.',
+      true
+    );
+    return;
+  }
 
   if (!mealOptions.length) {
     container.innerHTML =
@@ -590,53 +957,30 @@ function renderMealOptions() {
 
     return `
       <article class="product-card">
-        ${
-          option.image_url
-            ? `<img
-                class="product-card-image"
-                src="${escapeHtml(option.image_url)}"
-                alt="${escapeHtml(option.name)}"
-                loading="lazy"
-              >`
-            : '<div class="product-card-placeholder">🍽️</div>'
-        }
-
+        ${option.image_url
+          ? `<img class="product-card-image"
+                  src="${escapeHtml(option.image_url)}"
+                  alt="${escapeHtml(option.name)}"
+                  loading="lazy">`
+          : '<div class="product-card-placeholder">🍽️</div>'}
         <div class="product-card-content">
           <div class="product-card-top">
             <h3>${escapeHtml(option.name)}</h3>
             <span class="availability ${
               available ? 'available' : 'unavailable'
-            }">
-              ${available ? 'Disponible' : 'Indisponible'}
-            </span>
+            }">${available ? 'Disponible' : 'Indisponible'}</span>
           </div>
-
-          <p class="muted">
-            ${escapeHtml(mealGroups[option.group_key] || option.group_key)}
-          </p>
-
+          <p class="muted">${
+            escapeHtml(mealGroups[option.group_key] || option.group_key)
+          }</p>
           <p>${escapeHtml(option.description || 'Aucune description')}</p>
-
           <strong>${money(option.price)}</strong>
-
           <div class="product-actions">
-            <button type="button" data-edit-meal="${id}">
-              Modifier
-            </button>
-
-            <button
-              type="button"
-              class="secondary"
-              data-toggle-meal="${id}"
-            >
+            <button type="button" data-edit-meal="${id}">Modifier</button>
+            <button type="button" class="secondary" data-toggle-meal="${id}">
               ${available ? 'Désactiver' : 'Activer'}
             </button>
-
-            <button
-              type="button"
-              class="danger"
-              data-delete-meal="${id}"
-            >
+            <button type="button" class="danger" data-delete-meal="${id}">
               Supprimer
             </button>
           </div>
@@ -646,29 +990,20 @@ function renderMealOptions() {
   }).join('');
 
   container.querySelectorAll('[data-edit-meal]').forEach(button => {
-    button.addEventListener('click', () => {
-      editMealOption(button.dataset.editMeal);
-    });
+    button.addEventListener('click', () => editMealOption(button.dataset.editMeal));
   });
 
   container.querySelectorAll('[data-toggle-meal]').forEach(button => {
-    button.addEventListener('click', () => {
-      toggleMealOption(button.dataset.toggleMeal);
-    });
+    button.addEventListener('click', () => toggleMealOption(button.dataset.toggleMeal));
   });
 
   container.querySelectorAll('[data-delete-meal]').forEach(button => {
-    button.addEventListener('click', () => {
-      deleteMealOption(button.dataset.deleteMeal);
-    });
+    button.addEventListener('click', () => deleteMealOption(button.dataset.deleteMeal));
   });
 }
 
 function editMealOption(id) {
-  const option = mealOptions.find(
-    item => String(item.id) === String(id)
-  );
-
+  const option = mealOptions.find(item => String(item.id) === String(id));
   if (!option) return;
 
   $('meal-option-id').value = option.id;
@@ -678,25 +1013,21 @@ function editMealOption(id) {
   $('meal-option-price').value = option.price;
   $('meal-option-image').value = option.image_url || '';
   $('meal-option-sort').value = option.sort_order ?? 0;
-  $('meal-option-available').checked =
-    Number(option.is_available) === 1;
+  $('meal-option-available').checked = Number(option.is_available) === 1;
 
   $('save-meal-option').textContent = 'Enregistrer les modifications';
   $('cancel-meal-edit').classList.remove('hidden');
 
   mealOptionMessage(`Modification de : ${option.name}`);
 
-  $('meal-option-form').scrollIntoView({
+  $('meal-option-form')?.scrollIntoView({
     behavior: 'smooth',
     block: 'start',
   });
 }
 
 async function toggleMealOption(id) {
-  const option = mealOptions.find(
-    item => String(item.id) === String(id)
-  );
-
+  const option = mealOptions.find(item => String(item.id) === String(id));
   if (!option) return;
 
   try {
@@ -710,21 +1041,18 @@ async function toggleMealOption(id) {
       }
     );
 
-    mealOptionMessage('Disponibilité mise à jour.');
     await loadMealOptions();
-  } catch (err) {
+    mealOptionMessage('Disponibilité mise à jour.');
+  } catch (error) {
     mealOptionMessage(
-      err.message || 'Impossible de modifier la disponibilité.',
+      error.message || 'Impossible de modifier la disponibilité.',
       true
     );
   }
 }
 
 async function deleteMealOption(id) {
-  const option = mealOptions.find(
-    item => String(item.id) === String(id)
-  );
-
+  const option = mealOptions.find(item => String(item.id) === String(id));
   if (!option) return;
 
   if (!window.confirm(
@@ -734,17 +1062,38 @@ async function deleteMealOption(id) {
   }
 
   try {
-    await api(
-      `${MEAL_OPTIONS_API}/${encodeURIComponent(id)}`,
-      { method: 'DELETE' }
-    );
+    await api(`${MEAL_OPTIONS_API}/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
 
-    mealOptionMessage('Élément supprimé.');
     await loadMealOptions();
-  } catch (err) {
+    mealOptionMessage('Élément supprimé.');
+  } catch (error) {
     mealOptionMessage(
-      err.message || 'Impossible de supprimer cet élément.',
+      error.message || 'Impossible de supprimer cet élément.',
       true
     );
   }
 }
+
+/* -------------------- INITIALISATION -------------------- */
+
+function initializeFastFoodAdmin() {
+  console.log('[FASTFOOD] Initialisation du tableau de bord…');
+
+  initializeNavigation();
+
+  // État initial : commandes affichées.
+  switchPanel('orders');
+
+  console.log('[FASTFOOD] Initialisation terminée.');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeFastFoodAdmin, {
+    once: true,
+  });
+} else {
+  initializeFastFoodAdmin();
+}
+
